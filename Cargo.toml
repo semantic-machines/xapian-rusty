@@ -2,6 +2,10 @@
 name = "xapian-rusty"
 version = "0.0.1"
 edition = "2018"
+description = "Rust bindings to Xapian"
+readme = "README.md"
+authors = ["Valeriy Bushenev <ValeriyBushenev@gmail.com>"]
+license = "MIT"
 
 [lib]
 path = "lib.rs"
