@@ -9,27 +9,13 @@
 namespace org {
 namespace example {
 
-class ThingC {
-public:
-  ThingC(std::string appname);
-  ~ThingC();
-
-  std::string appname;
-};
-
-struct SharedThing;
-
-std::unique_ptr<ThingC> make_demo(rust::Str appname);
-const std::string &get_name(const ThingC &thing);
-void do_thing(SharedThing state);
-
 char get_err_code (const char* type);
 
 using namespace std;
 
 
-} // namespace example
-} // namespace org
+}
+}
 
 using namespace Xapian;
 
