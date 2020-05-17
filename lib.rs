@@ -10,7 +10,7 @@ pub const DB_CREATE: i8 = 2;
 pub const DB_CREATE_OR_OVERWRITE: i8 = 3;
 
 #[cxx::bridge(namespace = org::example)]
-mod xapian {
+pub mod xapian {
     extern "C" {
         include!("xapian-bind.h");
 
