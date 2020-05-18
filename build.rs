@@ -10,8 +10,8 @@ fn main() {
 
     let dst = PathBuf::from(env::var_os("OUT_DIR").unwrap());
 
-    fs::create_dir_all(dst.join("include")).unwrap();
-    fs::copy("xapian-bind.h", dst.join("include/xapian-bind.h")).unwrap();
+    fs::create_dir_all(dst.join("src")).unwrap();
+    fs::copy("xapian-bind.h", dst.join("src/xapian-bind.h")).unwrap();
 
 //    println!("cargo:root={}", dst.to_str().unwrap());
     println!("cargo:include={}/include", dst.to_str().unwrap());
