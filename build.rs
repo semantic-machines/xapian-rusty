@@ -10,11 +10,16 @@ fn main() {
         return;
     }
 
-    let target_dir = include_dir().unwrap().to_str().unwrap().to_string();
-    println!("target dir={}", target_dir);
-    fs::create_dir_all(target_dir.to_owned()).unwrap();
+    let out_dir = out_dir().unwrap().to_str().unwrap().to_string();
+    println!("@out dir={:?}", out_dir);
 
-    println!("copy headers {:?}", fs::copy("xapian-bind.h", target_dir + "/xapian-bind.h"));
+    let target_dir = include_dir().unwrap().to_str().unwrap().to_string();
+    println!("@target dir={}", target_dir);
+    fs::create_dir_all(target_dir.to_owned()).unwrap();
+    fs::create_dir_all(target_dir.to_owned() + "/src").unwrap();
+
+    println!("@copy headers {:?}", fs::copy("xapian-bind.h", target_dir.to_owned() + "/xapian-bind.h"));
+    println!("@copy gen files {:?}", fs::copy(out_dir + "src/lib.rs.h", target_dir.to_owned() + "/src/xapian-bind.h"));
 
     let sources = vec!["src/lib.rs"];
     cxx_build::bridges(sources).file("xapian-bind.cc").flag_if_supported("-std=c++14").compile("xapian-rusty");
