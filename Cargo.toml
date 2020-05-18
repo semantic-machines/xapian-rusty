@@ -1,6 +1,6 @@
 [package]
 name = "xapian-rusty"
-version = "0.0.16"
+version = "0.0.17"
 edition = "2018"
 description = "Rust bindings to Xapian"
 readme = "README.md"

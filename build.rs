@@ -10,7 +10,8 @@ fn main() {
         return;
     }
 
-    println!("@cargo_dir()={:?}", cargo_dir());
+    let cargo_dir = cargo_dir().unwrap().to_str().unwrap().to_string();
+    println!("@cargo_dirr={:?}", cargo_dir);
 
     let out_dir = out_dir().unwrap().to_str().unwrap().to_string();
     println!("@out dir={:?}", out_dir);
@@ -21,7 +22,11 @@ fn main() {
     fs::create_dir_all(target_dir.to_owned() + "/src").unwrap();
 
     println!("@copy headers {:?}", fs::copy("xapian-bind.h", target_dir.to_owned() + "/xapian-bind.h"));
-    println!("@copy gen files {:?}", fs::copy(out_dir + "src/lib.rs.h", target_dir.to_owned() + "/src/xapian-bind.h"));
+
+    if !cargo_dir.is_empty () {
+	let c_from = target_dir.to_owned() + "/" + &cargo_dir + "/src/lib.rs.h";
+	println!("@copy gen files {} {:?}", &c_from, fs::copy(c_from.to_owned(), target_dir.to_owned() + "/src/lib.rs.h"));
+    }
 
     let sources = vec!["src/lib.rs"];
     cxx_build::bridges(sources).file("xapian-bind.cc").flag_if_supported("-std=c++14").compile("xapian-rusty");
@@ -49,7 +54,6 @@ fn target_dir() -> Result<PathBuf> {
 fn cargo_dir() -> Result<PathBuf> {
     let mut dir = env::var_os("CARGO_MANIFEST_DIR").map(PathBuf::from).ok_or(Error::new(ErrorKind::Other, "fail read env var")).and_then(canonicalize)?;
     let mut new_dir = PathBuf::default();
-    println!("dir={:?}", dir);
     let mut is_found_cargo = false;
     for el in dir.iter() {
         if el == ".cargo" {
