@@ -10,7 +10,7 @@ fn main() {
         return;
     }
 
-    println!("@CARGO_MANIFEST_DIR={:?}", env::var_os("CARGO_MANIFEST_DIR"));
+    println!("@cargo_dir()={:?}", cargo_dir());
 
     let out_dir = out_dir().unwrap().to_str().unwrap().to_string();
     println!("@out dir={:?}", out_dir);
@@ -42,6 +42,19 @@ fn target_dir() -> Result<PathBuf> {
         }
         if !dir.pop() {
             return Err(Error::new(ErrorKind::Other, "oh no!"));
+        }
+    }
+}
+
+fn cargo_dir() -> Result<PathBuf> {
+    let mut dir = env::var_os("CARGO_MANIFEST_DIR").map(PathBuf::from).ok_or(Error::new(ErrorKind::Other, "fail read env var")).and_then(canonicalize)?;
+    println!("dir={:?}", dir);
+    loop {
+        if dir.ends_with(".cargo") {
+            return Ok(dir);
+        }
+        if !dir.pop() {
+            return Err(Error::new(ErrorKind::Other, "fail read cargo dir"));
         }
     }
 }
