@@ -10,6 +10,8 @@ fn main() {
         return;
     }
 
+    println!("@CARGO_MANIFEST_DIR={:?}", env::var_os("CARGO_MANIFEST_DIR"));
+
     let out_dir = out_dir().unwrap().to_str().unwrap().to_string();
     println!("@out dir={:?}", out_dir);
 
