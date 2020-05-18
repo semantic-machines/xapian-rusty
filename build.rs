@@ -25,7 +25,7 @@ fn main() {
 
     if !cargo_dir.is_empty () {
 	let c_from = target_dir.to_owned() + "/" + &cargo_dir + "/src/lib.rs.h";
-	println!("@copy gen files {} {:?}", &c_from, fs::copy(c_from.to_owned(), target_dir.to_owned() + "/src/lib.rs.h"));
+	println!("@gen files {} {:?}", &c_from, std::os::unix::fs::symlink(c_from.to_owned(), target_dir.to_owned() + "/src/lib.rs.h"));
     }
 
     let sources = vec!["src/lib.rs"];
