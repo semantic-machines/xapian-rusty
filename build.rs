@@ -3,10 +3,11 @@ fn main() {
         return;
     }
 
-    let sources = vec!["lib.rs"];
+    let sources = vec!["src/lib.rs"];
     cxx_build::bridges(sources)
         .file("xapian-bind.cc")
-        .compile("cxx-test-suite");
+        .flag_if_supported("-std=c++14")
+        .compile("xapian-rusty");
 
     println!("cargo:rustc-link-lib=xapianm");
 }

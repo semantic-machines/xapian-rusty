@@ -1,5 +1,5 @@
 #include "xapian-bind.h"
-#include "lib.rs.h"
+#include "src/lib.rs.h"
 #include <iostream>
 
 #include <xapian.h>
