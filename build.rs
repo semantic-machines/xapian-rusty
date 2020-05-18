@@ -48,15 +48,18 @@ fn target_dir() -> Result<PathBuf> {
 
 fn cargo_dir() -> Result<PathBuf> {
     let mut dir = env::var_os("CARGO_MANIFEST_DIR").map(PathBuf::from).ok_or(Error::new(ErrorKind::Other, "fail read env var")).and_then(canonicalize)?;
+    let mut new_dir = PathBuf::default();
     println!("dir={:?}", dir);
-    loop {
-        if dir.starts_with(".cargo") {
-            return Ok(dir);
+    let mut is_found_cargo = false;
+    for el in dir.iter() {
+        if el == ".cargo" {
+            is_found_cargo = true;
         }
-        if !dir.pop() {
-            return Err(Error::new(ErrorKind::Other, "fail read cargo dir"));
-        }
+	if is_found_cargo {
+	    new_dir.push(el);
+	}
     }
+ Ok (new_dir)
 }
 
 fn out_dir() -> Result<PathBuf> {
