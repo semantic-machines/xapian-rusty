@@ -10,16 +10,28 @@ fn main() {
         return;
     }
 
-    let cargo_dir = cargo_dir().unwrap().to_str().unwrap().to_string();
-    println!("@cargo_dirr={:?}", cargo_dir);
+    let sources = vec!["src/lib.rs"];
+
+    let w_cargo_target_dir = env::var_os("CARGO_TARGET_DIR").map(PathBuf::from).ok_or(Error::new(ErrorKind::Other, "fail read env var")).and_then(canonicalize);
+    println!("@cargo_target_dir={:?}", w_cargo_target_dir);
 
     let out_dir = out_dir().unwrap().to_str().unwrap().to_string();
     println!("@out dir={:?}", out_dir);
 
-    let target_dir = include_dir().unwrap().to_str().unwrap().to_string();
+    let target_dir = if let Ok(t) = w_cargo_target_dir {
+        t.join("cxxbridge").to_str().unwrap().to_string()
+    } else {
+        target_dir().unwrap().join("cxxbridge").to_str().unwrap().to_string()
+    };
     println!("@target dir={}", target_dir);
     fs::create_dir_all(target_dir.to_owned()).unwrap();
     fs::create_dir_all(target_dir.to_owned() + "/src").unwrap();
+
+    for path in sources.iter() {
+        if let Ok(from) = out_with_extension(Path::new(path), ".h") {
+            println!("@gen files {:?} {:?}", &from, std::os::unix::fs::symlink(&from, target_dir.to_owned() + "/src/lib.rs.h"));
+        }
+    }
 
     println!("@copy bind header {:?}", fs::copy("xapian-bind.h", target_dir.to_owned() + "/xapian-bind.h"));
 
@@ -27,20 +39,10 @@ fn main() {
     println!("@copy headers {:?}", fs::copy("include/xapian.h", target_dir.to_owned() + "/xapian.h"));
     println!("@copy headers {:?}", copy_dir("include/xapian", target_dir.to_owned() + "/xapian"));
 
-    if !cargo_dir.is_empty() {
-        let c_from = target_dir.to_owned() + "/" + &cargo_dir + "/src/lib.rs.h";
-        println!("@gen files {} {:?}", &c_from, std::os::unix::fs::symlink(c_from.to_owned(), target_dir.to_owned() + "/src/lib.rs.h"));
-    }
-
     let sources = vec!["src/lib.rs"];
     cxx_build::bridges(sources).file("xapian-bind.cc").flag_if_supported("-std=c++14").compile("xapian-rusty");
 
     println!("cargo:rustc-link-lib=xapianm");
-}
-
-fn include_dir() -> Result<PathBuf> {
-    let target_dir = target_dir()?;
-    Ok(target_dir.join("cxxbridge"))
 }
 
 fn target_dir() -> Result<PathBuf> {
@@ -55,27 +57,36 @@ fn target_dir() -> Result<PathBuf> {
     }
 }
 
-fn cargo_dir() -> Result<PathBuf> {
-    let dir = env::var_os("CARGO_MANIFEST_DIR").map(PathBuf::from).ok_or(Error::new(ErrorKind::Other, "fail read env var")).and_then(canonicalize)?;
-    let mut new_dir = PathBuf::default();
-    let mut is_found_cargo = false;
-    for el in dir.iter() {
-        if el == ".cargo" {
-            is_found_cargo = true;
-        }
-        if is_found_cargo {
-            new_dir.push(el);
-        }
-    }
-    Ok(new_dir)
-}
-
 fn out_dir() -> Result<PathBuf> {
     env::var_os("OUT_DIR").map(PathBuf::from).ok_or(Error::new(ErrorKind::Other, "oh no!"))
 }
 
 fn canonicalize(path: impl AsRef<Path>) -> Result<PathBuf> {
     Ok(fs::canonicalize(path)?)
+}
+
+fn relative_to_parent_of_target_dir(original: &Path) -> Result<PathBuf> {
+    let target_dir = target_dir()?;
+    let mut outer = target_dir.parent().unwrap();
+    let original = canonicalize(original)?;
+    loop {
+        if let Ok(suffix) = original.strip_prefix(outer) {
+            return Ok(suffix.to_owned());
+        }
+        match outer.parent() {
+            Some(parent) => outer = parent,
+            None => return Ok(original.components().skip(1).collect()),
+        }
+    }
+}
+
+pub(crate) fn out_with_extension(path: &Path, ext: &str) -> Result<PathBuf> {
+    let mut file_name = path.file_name().unwrap().to_owned();
+    file_name.push(ext);
+
+    let out_dir = out_dir()?;
+    let rel = relative_to_parent_of_target_dir(path)?;
+    Ok(out_dir.join(rel).with_file_name(file_name))
 }
 
 pub fn copy_dir<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> Result<()> {
