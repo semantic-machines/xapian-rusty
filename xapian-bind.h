@@ -5,18 +5,6 @@
 #include <string>
 #include <string.h>
 
-
-namespace org {
-namespace example {
-
-char get_err_code (const char* type);
-
-using namespace std;
-
-
-}
-}
-
 using namespace Xapian;
 
 std::unique_ptr<Database> new_database(int8_t &err);

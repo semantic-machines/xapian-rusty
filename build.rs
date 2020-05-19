@@ -21,11 +21,15 @@ fn main() {
     fs::create_dir_all(target_dir.to_owned()).unwrap();
     fs::create_dir_all(target_dir.to_owned() + "/src").unwrap();
 
-    println!("@copy headers {:?}", fs::copy("xapian-bind.h", target_dir.to_owned() + "/xapian-bind.h"));
+    println!("@copy bind header {:?}", fs::copy("xapian-bind.h", target_dir.to_owned() + "/xapian-bind.h"));
 
-    if !cargo_dir.is_empty () {
-	let c_from = target_dir.to_owned() + "/" + &cargo_dir + "/src/lib.rs.h";
-	println!("@gen files {} {:?}", &c_from, std::os::unix::fs::symlink(c_from.to_owned(), target_dir.to_owned() + "/src/lib.rs.h"));
+    fs::create_dir_all(target_dir.to_owned() + "/xapian").unwrap();
+    println!("@copy headers {:?}", fs::copy("include/xapian.h", target_dir.to_owned() + "/xapian.h"));
+    println!("@copy headers {:?}", copy_dir("include/xapian", target_dir.to_owned() + "/xapian"));
+
+    if !cargo_dir.is_empty() {
+        let c_from = target_dir.to_owned() + "/" + &cargo_dir + "/src/lib.rs.h";
+        println!("@gen files {} {:?}", &c_from, std::os::unix::fs::symlink(c_from.to_owned(), target_dir.to_owned() + "/src/lib.rs.h"));
     }
 
     let sources = vec!["src/lib.rs"];
@@ -52,18 +56,18 @@ fn target_dir() -> Result<PathBuf> {
 }
 
 fn cargo_dir() -> Result<PathBuf> {
-    let mut dir = env::var_os("CARGO_MANIFEST_DIR").map(PathBuf::from).ok_or(Error::new(ErrorKind::Other, "fail read env var")).and_then(canonicalize)?;
+    let dir = env::var_os("CARGO_MANIFEST_DIR").map(PathBuf::from).ok_or(Error::new(ErrorKind::Other, "fail read env var")).and_then(canonicalize)?;
     let mut new_dir = PathBuf::default();
     let mut is_found_cargo = false;
     for el in dir.iter() {
         if el == ".cargo" {
             is_found_cargo = true;
         }
-	if is_found_cargo {
-	    new_dir.push(el);
-	}
+        if is_found_cargo {
+            new_dir.push(el);
+        }
     }
- Ok (new_dir)
+    Ok(new_dir)
 }
 
 fn out_dir() -> Result<PathBuf> {
@@ -72,4 +76,51 @@ fn out_dir() -> Result<PathBuf> {
 
 fn canonicalize(path: impl AsRef<Path>) -> Result<PathBuf> {
     Ok(fs::canonicalize(path)?)
+}
+
+pub fn copy_dir<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> Result<()> {
+    let mut stack = Vec::new();
+    stack.push(PathBuf::from(from.as_ref()));
+
+    let output_root = PathBuf::from(to.as_ref());
+    let input_root = PathBuf::from(from.as_ref()).components().count();
+
+    while let Some(working_path) = stack.pop() {
+        println!("process: {:?}", &working_path);
+
+        // Generate a relative path
+        let src: PathBuf = working_path.components().skip(input_root).collect();
+
+        // Create a destination if missing
+        let dest = if src.components().count() == 0 {
+            output_root.clone()
+        } else {
+            output_root.join(&src)
+        };
+        if fs::metadata(&dest).is_err() {
+            println!(" mkdir: {:?}", dest);
+            fs::create_dir_all(&dest)?;
+        }
+
+        for entry in fs::read_dir(working_path)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push(path);
+            } else {
+                match path.file_name() {
+                    Some(filename) => {
+                        let dest_path = dest.join(filename);
+                        println!("  copy: {:?} -> {:?}", &path, &dest_path);
+                        fs::copy(&path, &dest_path)?;
+                    }
+                    None => {
+                        println!("failed: {:?}", path);
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(())
 }

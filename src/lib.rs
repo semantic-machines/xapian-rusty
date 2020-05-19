@@ -44,5 +44,4 @@ pub mod xapian {
         pub fn add_int(doc: &mut Document, slot: u32, data: i32, err: &mut i8);
         pub fn set_data(doc: &mut Document, data: &str, err: &mut i8);
     }
-
 }
