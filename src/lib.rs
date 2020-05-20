@@ -69,7 +69,7 @@ pub struct WritableDatabase {
 }
 
 impl WritableDatabase {
-    fn new(path: &str, action: i8, db_type: i8) -> Result<Self, i8> {
+    pub fn new(path: &str, action: i8, db_type: i8) -> Result<Self, i8> {
         unsafe {
             let mut err = 0;
             let obj = ffi::new_writable_database_with_path(path, action, db_type, &mut err);
@@ -90,7 +90,7 @@ pub struct Document {
 }
 
 impl Document {
-    fn new() -> Result<Self, i8> {
+    pub fn new() -> Result<Self, i8> {
         unsafe {
             let mut err = 0;
             let obj = ffi::new_document(&mut err);
@@ -110,7 +110,7 @@ pub struct Stem {
 }
 
 impl Stem {
-    fn new(lang: &str) -> Result<Self, i8> {
+    pub fn new(lang: &str) -> Result<Self, i8> {
         unsafe {
             let mut err = 0;
             let obj = ffi::new_stem(lang, &mut err);
@@ -130,7 +130,7 @@ pub struct TermGenerator {
 }
 
 impl TermGenerator {
-    fn new() -> Result<Self, i8> {
+    pub fn new() -> Result<Self, i8> {
         unsafe {
             let mut err = 0;
             let obj = ffi::new_termgenerator(&mut err);
@@ -146,7 +146,7 @@ impl TermGenerator {
 }
 
 impl TermGenerator {
-    fn set_stemmer(&mut self, stem: &mut Stem) -> Result<(), i8> {
+    pub fn set_stemmer(&mut self, stem: &mut Stem) -> Result<(), i8> {
         unsafe {
             let mut err = 0;
             ffi::set_stemmer(&mut self.cxxp, &mut stem.cxxp, &mut err);
@@ -158,7 +158,7 @@ impl TermGenerator {
         }
     }
 
-    fn set_document(&mut self, doc: &mut Document) -> Result<(), i8> {
+    pub fn set_document(&mut self, doc: &mut Document) -> Result<(), i8> {
         unsafe {
             let mut err = 0;
 
@@ -172,7 +172,7 @@ impl TermGenerator {
         }
     }
 
-    fn index_text(&mut self, data: &str) -> Result<(), i8> {
+    pub fn index_text(&mut self, data: &str) -> Result<(), i8> {
         unsafe {
             let mut err = 0;
 
@@ -186,7 +186,7 @@ impl TermGenerator {
         }
     }
 
-    fn index_int(&mut self, data: i32) -> Result<(), i8> {
+    pub fn index_int(&mut self, data: i32) -> Result<(), i8> {
         unsafe {
             let mut err = 0;
 
@@ -200,7 +200,7 @@ impl TermGenerator {
         }
     }
 
-    fn index_long(&mut self, data: i64) -> Result<(), i8> {
+    pub fn index_long(&mut self, data: i64) -> Result<(), i8> {
         unsafe {
             let mut err = 0;
 
@@ -214,7 +214,7 @@ impl TermGenerator {
         }
     }
 
-    fn index_float(&mut self, data: f32) -> Result<(), i8> {
+    pub fn index_float(&mut self, data: f32) -> Result<(), i8> {
         unsafe {
             let mut err = 0;
 
@@ -228,7 +228,7 @@ impl TermGenerator {
         }
     }
 
-    fn index_double(&mut self, data: f64) -> Result<(), i8> {
+    pub fn index_double(&mut self, data: f64) -> Result<(), i8> {
         unsafe {
             let mut err = 0;
 
