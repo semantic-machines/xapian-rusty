@@ -16,7 +16,6 @@ char get_err_code(const char *type)
 {
     signed char err = 0;
 
-//    cout << "XAPIAN_D:" << type;
     if (strcmp(type, (char *)"DatabaseModifiedError") == 0)
         err = -1;
     else if (strcmp(type, (char *)"DatabaseLockError") == 0)

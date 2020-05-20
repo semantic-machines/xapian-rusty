@@ -74,7 +74,7 @@ impl WritableDatabase {
             let mut err = 0;
             let obj = ffi::new_writable_database_with_path(path, action, db_type, &mut err);
 
-            if err < 0 {
+            if err == 0 {
                 Ok(Self {
                     cxxp: obj,
                 })
@@ -94,7 +94,7 @@ impl Document {
         unsafe {
             let mut err = 0;
             let obj = ffi::new_document(&mut err);
-            if err < 0 {
+            if err == 0 {
                 Ok(Self {
                     cxxp: obj,
                 })
@@ -114,7 +114,7 @@ impl Stem {
         unsafe {
             let mut err = 0;
             let obj = ffi::new_stem(lang, &mut err);
-            if err < 0 {
+            if err == 0 {
                 Ok(Self {
                     cxxp: obj,
                 })
@@ -134,7 +134,7 @@ impl TermGenerator {
         unsafe {
             let mut err = 0;
             let obj = ffi::new_termgenerator(&mut err);
-            if err < 0 {
+            if err == 0 {
                 Ok(Self {
                     cxxp: obj,
                 })
