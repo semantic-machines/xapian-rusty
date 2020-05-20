@@ -49,28 +49,97 @@ pub(crate) mod ffi {
     }
 }
 
+pub struct Database {
+    cxxp: UniquePtr<ffi::Database>,
+}
+
+impl Default for Database {
+    fn default() -> Self {
+        unsafe {
+            let mut err = 0;
+            Self {
+                cxxp: ffi::new_database(&mut err),
+            }
+        }
+    }
+}
+
 pub struct WritableDatabase {
     cxxp: UniquePtr<ffi::WritableDatabase>,
+}
+
+impl WritableDatabase {
+    fn new(path: &str, action: i8, db_type: i8) -> Result<Self, i8> {
+        unsafe {
+            let mut err = 0;
+            let obj = ffi::new_writable_database_with_path(path, action, db_type, &mut err);
+
+            if err < 0 {
+                Ok(Self {
+                    cxxp: obj,
+                })
+            } else {
+                Err(err)
+            }
+        }
+    }
 }
 
 pub struct Document {
     cxxp: UniquePtr<ffi::Document>,
 }
 
+impl Document {
+    fn new() -> Result<Self, i8> {
+        unsafe {
+            let mut err = 0;
+            let obj = ffi::new_document(&mut err);
+            if err < 0 {
+                Ok(Self {
+                    cxxp: obj,
+                })
+            } else {
+                Err(err)
+            }
+        }
+    }
+}
+
 pub struct Stem {
     cxxp: UniquePtr<ffi::Stem>,
+}
+
+impl Stem {
+    fn new(lang: &str) -> Result<Self, i8> {
+        unsafe {
+            let mut err = 0;
+            let obj = ffi::new_stem(lang, &mut err);
+            if err < 0 {
+                Ok(Self {
+                    cxxp: obj,
+                })
+            } else {
+                Err(err)
+            }
+        }
+    }
 }
 
 pub struct TermGenerator {
     cxxp: UniquePtr<ffi::TermGenerator>,
 }
 
-impl Default for TermGenerator {
-    fn default() -> Self {
+impl TermGenerator {
+    fn new() -> Result<Self, i8> {
         unsafe {
             let mut err = 0;
-            Self {
-                cxxp: ffi::new_termgenerator(&mut err),
+            let obj = ffi::new_termgenerator(&mut err);
+            if err < 0 {
+                Ok(Self {
+                    cxxp: obj,
+                })
+            } else {
+                Err(err)
             }
         }
     }
