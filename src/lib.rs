@@ -83,6 +83,17 @@ impl WritableDatabase {
             }
         }
     }
+
+    pub fn delete_document(&mut self, unique_term: &str, doc: &mut Document) -> Result<(), i8> {
+        unsafe {
+            let mut err = 0;
+            ffi::delete_document(&mut self.cxxp, unique_term, &mut doc.cxxp, &mut err);
+            if err < 0 {
+                return Err(err);
+            }
+        }
+        Ok(())
+    }
 }
 
 pub struct Document {
@@ -102,6 +113,45 @@ impl Document {
                 Err(err)
             }
         }
+    }
+
+    pub fn add_string(&mut self, slot: u32, data: &str) -> Result<(), i8> {
+        unsafe {
+            let mut err = 0;
+
+            ffi::add_string(&mut self.cxxp, slot, data, &mut err);
+
+            if err < 0 {
+                return Err(err);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn add_int(&mut self, slot: u32, data: i32) -> Result<(), i8> {
+        unsafe {
+            let mut err = 0;
+
+            ffi::add_int(&mut self.cxxp, slot, data, &mut err);
+
+            if err < 0 {
+                return Err(err);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn set_data(&mut self, data: &str) -> Result<(), i8> {
+        unsafe {
+            let mut err = 0;
+
+            ffi::set_data(&mut self.cxxp, data, &mut err);
+
+            if err < 0 {
+                return Err(err);
+            }
+        }
+        Ok(())
     }
 }
 
@@ -152,10 +202,9 @@ impl TermGenerator {
             ffi::set_stemmer(&mut self.cxxp, &mut stem.cxxp, &mut err);
             if err < 0 {
                 return Err(err);
-            } else {
-                return Ok(());
             }
         }
+        Ok(())
     }
 
     pub fn set_document(&mut self, doc: &mut Document) -> Result<(), i8> {
@@ -166,10 +215,9 @@ impl TermGenerator {
 
             if err < 0 {
                 return Err(err);
-            } else {
-                return Ok(());
             }
         }
+        Ok(())
     }
 
     pub fn index_text(&mut self, data: &str) -> Result<(), i8> {
@@ -180,10 +228,9 @@ impl TermGenerator {
 
             if err < 0 {
                 return Err(err);
-            } else {
-                return Ok(());
             }
         }
+        Ok(())
     }
 
     pub fn index_int(&mut self, data: i32) -> Result<(), i8> {
@@ -194,10 +241,9 @@ impl TermGenerator {
 
             if err < 0 {
                 return Err(err);
-            } else {
-                return Ok(());
             }
         }
+        Ok(())
     }
 
     pub fn index_long(&mut self, data: i64) -> Result<(), i8> {
@@ -208,10 +254,9 @@ impl TermGenerator {
 
             if err < 0 {
                 return Err(err);
-            } else {
-                return Ok(());
             }
         }
+        Ok(())
     }
 
     pub fn index_float(&mut self, data: f32) -> Result<(), i8> {
@@ -222,10 +267,9 @@ impl TermGenerator {
 
             if err < 0 {
                 return Err(err);
-            } else {
-                return Ok(());
             }
         }
+        Ok(())
     }
 
     pub fn index_double(&mut self, data: f64) -> Result<(), i8> {
@@ -236,9 +280,8 @@ impl TermGenerator {
 
             if err < 0 {
                 return Err(err);
-            } else {
-                return Ok(());
             }
         }
+        Ok(())
     }
 }
