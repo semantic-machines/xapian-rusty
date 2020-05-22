@@ -227,12 +227,12 @@ void set_document(TermGenerator &tg, Document &doc, int8_t &err)
     }
 }
 
-void index_text(TermGenerator &tg, rust::Str data, int8_t &err)
+void index_text(TermGenerator &tg, rust::Str data, rust::Str prefix, int8_t &err)
 {
     try
     {
         err = 0;
-        tg.index_text(std::string(data));
+        tg.index_text(std::string(data), 1, std::string(prefix));
     }
     catch (Error ex)
     {
@@ -240,13 +240,13 @@ void index_text(TermGenerator &tg, rust::Str data, int8_t &err)
     }
 }
 
-void index_int(TermGenerator &tg, int32_t in_data, int8_t &err)
+void index_int(TermGenerator &tg, int32_t in_data, rust::Str prefix, int8_t &err)
 {
     try
     {
         err = 0;
         std::string data = sortable_serialise(in_data);
-        tg.index_text(data);
+        tg.index_text(data, 1, std::string(prefix));
     }
     catch (Error ex)
     {
@@ -254,13 +254,13 @@ void index_int(TermGenerator &tg, int32_t in_data, int8_t &err)
     }
 }
 
-void index_long(TermGenerator &tg, int64_t in_data, int8_t &err)
+void index_long(TermGenerator &tg, int64_t in_data, rust::Str prefix, int8_t &err)
 {
     try
     {
         err = 0;
         std::string data = sortable_serialise(in_data);
-        tg.index_text(data);
+        tg.index_text(data, 1, std::string(prefix));
     }
     catch (Error ex)
     {
@@ -268,13 +268,13 @@ void index_long(TermGenerator &tg, int64_t in_data, int8_t &err)
     }
 }
 
-void index_float(TermGenerator &tg, float in_data, int8_t &err)
+void index_float(TermGenerator &tg, float in_data, rust::Str prefix, int8_t &err)
 {
     try
     {
         err = 0;
         std::string data = sortable_serialise(in_data);
-        tg.index_text(data);
+        tg.index_text(data, 1, std::string(prefix));
     }
     catch (Error ex)
     {
@@ -282,13 +282,13 @@ void index_float(TermGenerator &tg, float in_data, int8_t &err)
     }
 }
 
-void index_double(TermGenerator &tg, double in_data, int8_t &err)
+void index_double(TermGenerator &tg, double in_data, rust::Str prefix, int8_t &err)
 {
     try
     {
         err = 0;
         std::string data = sortable_serialise(in_data);
-        tg.index_text(data);
+        tg.index_text(data, 1, std::string(prefix));
     }
     catch (Error ex)
     {
@@ -326,6 +326,34 @@ void add_string(Document &doc, valueno slot, rust::Str data, int8_t &err)
 }
 
 void add_int(Document &doc, valueno slot, int in_data, int8_t &err)
+{
+    try
+    {
+        err = 0;
+        std::string data = sortable_serialise(in_data);
+        doc.add_value(slot, data);
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+    }
+}
+
+void add_float(Document &doc, valueno slot, float in_data, int8_t &err)
+{
+    try
+    {
+        err = 0;
+        std::string data = sortable_serialise(in_data);
+        doc.add_value(slot, data);
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+    }
+}
+
+void add_double(Document &doc, valueno slot, double in_data, int8_t &err)
 {
     try
     {

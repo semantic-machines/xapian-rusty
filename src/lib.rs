@@ -35,16 +35,18 @@ pub(crate) mod ffi {
         pub(crate) fn new_termgenerator(err: &mut i8) -> UniquePtr<TermGenerator>;
         pub(crate) fn set_stemmer(tg: &mut TermGenerator, stem: &mut Stem, err: &mut i8);
         pub(crate) fn set_document(tg: &mut TermGenerator, doc: &mut Document, err: &mut i8);
-        pub(crate) fn index_text(tg: &mut TermGenerator, data: &str, err: &mut i8);
-        pub(crate) fn index_int(tg: &mut TermGenerator, data: i32, err: &mut i8);
-        pub(crate) fn index_long(tg: &mut TermGenerator, data: i64, err: &mut i8);
-        pub(crate) fn index_float(tg: &mut TermGenerator, data: f32, err: &mut i8);
-        pub(crate) fn index_double(tg: &mut TermGenerator, data: f64, err: &mut i8);
+        pub(crate) fn index_text(tg: &mut TermGenerator, data: &str, prefix: &str, err: &mut i8);
+        pub(crate) fn index_int(tg: &mut TermGenerator, data: i32, prefix: &str, err: &mut i8);
+        pub(crate) fn index_long(tg: &mut TermGenerator, data: i64, prefix: &str, err: &mut i8);
+        pub(crate) fn index_float(tg: &mut TermGenerator, data: f32, prefix: &str, err: &mut i8);
+        pub(crate) fn index_double(tg: &mut TermGenerator, data: f64, prefix: &str, err: &mut i8);
 
         pub(crate) type Document;
         pub(crate) fn new_document(err: &mut i8) -> UniquePtr<Document>;
         pub(crate) fn add_string(doc: &mut Document, slot: u32, data: &str, err: &mut i8);
         pub(crate) fn add_int(doc: &mut Document, slot: u32, data: i32, err: &mut i8);
+        pub(crate) fn add_float(doc: &mut Document, slot: u32, data: f32, err: &mut i8);
+        pub(crate) fn add_double(doc: &mut Document, slot: u32, data: f64, err: &mut i8);
         pub(crate) fn set_data(doc: &mut Document, data: &str, err: &mut i8);
     }
 }
@@ -141,6 +143,19 @@ impl Document {
         Ok(())
     }
 
+    pub fn add_double(&mut self, slot: u32, data: f64) -> Result<(), i8> {
+        unsafe {
+            let mut err = 0;
+
+            ffi::add_double(&mut self.cxxp, slot, data, &mut err);
+
+            if err < 0 {
+                return Err(err);
+            }
+        }
+        Ok(())
+    }
+
     pub fn set_data(&mut self, data: &str) -> Result<(), i8> {
         unsafe {
             let mut err = 0;
@@ -220,11 +235,11 @@ impl TermGenerator {
         Ok(())
     }
 
-    pub fn index_text(&mut self, data: &str) -> Result<(), i8> {
+    pub fn index_text(&mut self, data: &str, prefix: &str) -> Result<(), i8> {
         unsafe {
             let mut err = 0;
 
-            ffi::index_text(&mut self.cxxp, data, &mut err);
+            ffi::index_text(&mut self.cxxp, data, prefix, &mut err);
 
             if err < 0 {
                 return Err(err);
@@ -233,11 +248,11 @@ impl TermGenerator {
         Ok(())
     }
 
-    pub fn index_int(&mut self, data: i32) -> Result<(), i8> {
+    pub fn index_int(&mut self, data: i32, prefix: &str) -> Result<(), i8> {
         unsafe {
             let mut err = 0;
 
-            ffi::index_int(&mut self.cxxp, data, &mut err);
+            ffi::index_int(&mut self.cxxp, data, prefix, &mut err);
 
             if err < 0 {
                 return Err(err);
@@ -246,11 +261,11 @@ impl TermGenerator {
         Ok(())
     }
 
-    pub fn index_long(&mut self, data: i64) -> Result<(), i8> {
+    pub fn index_long(&mut self, data: i64, prefix: &str) -> Result<(), i8> {
         unsafe {
             let mut err = 0;
 
-            ffi::index_long(&mut self.cxxp, data, &mut err);
+            ffi::index_long(&mut self.cxxp, data, prefix, &mut err);
 
             if err < 0 {
                 return Err(err);
@@ -259,11 +274,11 @@ impl TermGenerator {
         Ok(())
     }
 
-    pub fn index_float(&mut self, data: f32) -> Result<(), i8> {
+    pub fn index_float(&mut self, data: f32, prefix: &str) -> Result<(), i8> {
         unsafe {
             let mut err = 0;
 
-            ffi::index_float(&mut self.cxxp, data, &mut err);
+            ffi::index_float(&mut self.cxxp, data, prefix, &mut err);
 
             if err < 0 {
                 return Err(err);
@@ -272,11 +287,11 @@ impl TermGenerator {
         Ok(())
     }
 
-    pub fn index_double(&mut self, data: f64) -> Result<(), i8> {
+    pub fn index_double(&mut self, data: f64, prefix: &str) -> Result<(), i8> {
         unsafe {
             let mut err = 0;
 
-            ffi::index_double(&mut self.cxxp, data, &mut err);
+            ffi::index_double(&mut self.cxxp, data, prefix, &mut err);
 
             if err < 0 {
                 return Err(err);
