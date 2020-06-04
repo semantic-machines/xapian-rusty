@@ -29,13 +29,14 @@ pub(crate) mod ffi {
         pub(crate) fn new_writable_database_with_path(path: &str, action: i8, db_type: i8, err: &mut i8) -> UniquePtr<WritableDatabase>;
         pub(crate) fn commit(db: &mut WritableDatabase, err: &mut i8);
         pub(crate) fn replace_document(db: &mut WritableDatabase, unique_term: &str, doc: &mut Document, err: &mut i8) -> u32;
-        pub(crate) fn delete_document(db: &mut WritableDatabase, unique_term: &str, doc: &mut Document, err: &mut i8);
+        pub(crate) fn delete_document(db: &mut WritableDatabase, unique_term: &str, err: &mut i8);
 
         pub(crate) type TermGenerator;
         pub(crate) fn new_termgenerator(err: &mut i8) -> UniquePtr<TermGenerator>;
         pub(crate) fn set_stemmer(tg: &mut TermGenerator, stem: &mut Stem, err: &mut i8);
         pub(crate) fn set_document(tg: &mut TermGenerator, doc: &mut Document, err: &mut i8);
-        pub(crate) fn index_text(tg: &mut TermGenerator, data: &str, prefix: &str, err: &mut i8);
+        pub(crate) fn index_text_with_prefix(tg: &mut TermGenerator, data: &str, prefix: &str, err: &mut i8);
+        pub(crate) fn index_text(tg: &mut TermGenerator, data: &str, err: &mut i8);
         pub(crate) fn index_int(tg: &mut TermGenerator, data: i32, prefix: &str, err: &mut i8);
         pub(crate) fn index_long(tg: &mut TermGenerator, data: i64, prefix: &str, err: &mut i8);
         pub(crate) fn index_float(tg: &mut TermGenerator, data: f32, prefix: &str, err: &mut i8);
@@ -45,16 +46,19 @@ pub(crate) mod ffi {
         pub(crate) fn new_document(err: &mut i8) -> UniquePtr<Document>;
         pub(crate) fn add_string(doc: &mut Document, slot: u32, data: &str, err: &mut i8);
         pub(crate) fn add_int(doc: &mut Document, slot: u32, data: i32, err: &mut i8);
+        pub(crate) fn add_long(doc: &mut Document, slot: u32, data: i64, err: &mut i8);
         pub(crate) fn add_float(doc: &mut Document, slot: u32, data: f32, err: &mut i8);
         pub(crate) fn add_double(doc: &mut Document, slot: u32, data: f64, err: &mut i8);
         pub(crate) fn set_data(doc: &mut Document, data: &str, err: &mut i8);
+        pub(crate) fn add_boolean_term(doc: &mut Document, data: &str, err: &mut i8);
     }
 }
 
 pub struct Database {
-    cxxp: UniquePtr<ffi::Database>,
+    pub cxxp: UniquePtr<ffi::Database>,
 }
 
+#[allow(unused_unsafe)]
 impl Default for Database {
     fn default() -> Self {
         unsafe {
@@ -70,6 +74,7 @@ pub struct WritableDatabase {
     cxxp: UniquePtr<ffi::WritableDatabase>,
 }
 
+#[allow(unused_unsafe)]
 impl WritableDatabase {
     pub fn new(path: &str, action: i8, db_type: i8) -> Result<Self, i8> {
         unsafe {
@@ -86,10 +91,32 @@ impl WritableDatabase {
         }
     }
 
-    pub fn delete_document(&mut self, unique_term: &str, doc: &mut Document) -> Result<(), i8> {
+    pub fn delete_document(&mut self, unique_term: &str) -> Result<(), i8> {
         unsafe {
             let mut err = 0;
-            ffi::delete_document(&mut self.cxxp, unique_term, &mut doc.cxxp, &mut err);
+            ffi::delete_document(&mut self.cxxp, unique_term, &mut err);
+            if err < 0 {
+                return Err(err);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn replace_document(&mut self, unique_term: &str, doc: &mut Document) -> Result<(), i8> {
+        unsafe {
+            let mut err = 0;
+            ffi::replace_document(&mut self.cxxp, unique_term, &mut doc.cxxp, &mut err);
+            if err < 0 {
+                return Err(err);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn commit(&mut self) -> Result<(), i8> {
+        unsafe {
+            let mut err = 0;
+            ffi::commit(&mut self.cxxp, &mut err);
             if err < 0 {
                 return Err(err);
             }
@@ -102,6 +129,7 @@ pub struct Document {
     cxxp: UniquePtr<ffi::Document>,
 }
 
+#[allow(unused_unsafe)]
 impl Document {
     pub fn new() -> Result<Self, i8> {
         unsafe {
@@ -143,6 +171,19 @@ impl Document {
         Ok(())
     }
 
+    pub fn add_long(&mut self, slot: u32, data: i64) -> Result<(), i8> {
+        unsafe {
+            let mut err = 0;
+
+            ffi::add_long(&mut self.cxxp, slot, data, &mut err);
+
+            if err < 0 {
+                return Err(err);
+            }
+        }
+        Ok(())
+    }
+
     pub fn add_double(&mut self, slot: u32, data: f64) -> Result<(), i8> {
         unsafe {
             let mut err = 0;
@@ -168,12 +209,26 @@ impl Document {
         }
         Ok(())
     }
+
+    pub fn add_boolean_term(&mut self, data: &str) -> Result<(), i8> {
+        unsafe {
+            let mut err = 0;
+
+            ffi::add_boolean_term(&mut self.cxxp, data, &mut err);
+
+            if err < 0 {
+                return Err(err);
+            }
+        }
+        Ok(())
+    }
 }
 
 pub struct Stem {
     cxxp: UniquePtr<ffi::Stem>,
 }
 
+#[allow(unused_unsafe)]
 impl Stem {
     pub fn new(lang: &str) -> Result<Self, i8> {
         unsafe {
@@ -194,6 +249,7 @@ pub struct TermGenerator {
     cxxp: UniquePtr<ffi::TermGenerator>,
 }
 
+#[allow(unused_unsafe)]
 impl TermGenerator {
     pub fn new() -> Result<Self, i8> {
         unsafe {
@@ -210,6 +266,7 @@ impl TermGenerator {
     }
 }
 
+#[allow(unused_unsafe)]
 impl TermGenerator {
     pub fn set_stemmer(&mut self, stem: &mut Stem) -> Result<(), i8> {
         unsafe {
@@ -235,11 +292,24 @@ impl TermGenerator {
         Ok(())
     }
 
-    pub fn index_text(&mut self, data: &str, prefix: &str) -> Result<(), i8> {
+    pub fn index_text_with_prefix(&mut self, data: &str, prefix: &str) -> Result<(), i8> {
         unsafe {
             let mut err = 0;
 
-            ffi::index_text(&mut self.cxxp, data, prefix, &mut err);
+            ffi::index_text_with_prefix(&mut self.cxxp, data, prefix, &mut err);
+
+            if err < 0 {
+                return Err(err);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn index_text(&mut self, data: &str) -> Result<(), i8> {
+        unsafe {
+            let mut err = 0;
+
+            ffi::index_text(&mut self.cxxp, data, &mut err);
 
             if err < 0 {
                 return Err(err);
@@ -298,5 +368,32 @@ impl TermGenerator {
             }
         }
         Ok(())
+    }
+}
+
+pub fn get_xapian_err_type(errcode: i8) -> &'static str {
+    match errcode {
+        -1 => "DatabaseModifiedError",
+        -2 => "DatabaseLockError",
+        -3 => "LogicError",
+        -4 => "AssertionError",
+        -5 => "InvalidArgumentError",
+        -6 => "InvalidOperationError",
+        -7 => "UnimplementedError",
+        -8 => "RuntimeError",
+        -9 => "DatabaseError",
+        -10 => "DatabaseCorruptError",
+        -11 => "DatabaseCreateError",
+        -12 => "DatabaseOpeningError",
+        -13 => "DatabaseVersionError",
+        -14 => "DocNotFoundError",
+        -15 => "FeatureUnavailableError",
+        -16 => "InternalError",
+        -17 => "NetworkError",
+        -18 => "NetworkTimeoutError",
+        -19 => "QueryParserError",
+        -20 => "RangeError",
+        -21 => "SerialisationError",
+        _ => "Unknown",
     }
 }

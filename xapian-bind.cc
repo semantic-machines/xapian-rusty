@@ -173,11 +173,11 @@ docid replace_document(WritableDatabase &db, rust::Str unique_term, Document &do
     }
 }
 
-void delete_document(WritableDatabase &db, rust::Str unique_term, Document &doc, int8_t &err)
+void delete_document(WritableDatabase &db, rust::Str unique_term, int8_t &err)
 {
     try
     {
-        db.replace_document(std::string(unique_term), doc);
+        db.delete_document(std::string(unique_term));
     }
     catch (Error ex)
     {
@@ -227,7 +227,20 @@ void set_document(TermGenerator &tg, Document &doc, int8_t &err)
     }
 }
 
-void index_text(TermGenerator &tg, rust::Str data, rust::Str prefix, int8_t &err)
+void index_text(TermGenerator &tg, rust::Str data, int8_t &err)
+{
+    try
+    {
+        err = 0;
+        tg.index_text(std::string(data));
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+    }
+}
+
+void index_text_with_prefix(TermGenerator &tg, rust::Str data, rust::Str prefix, int8_t &err)
 {
     try
     {
@@ -339,6 +352,20 @@ void add_int(Document &doc, valueno slot, int in_data, int8_t &err)
     }
 }
 
+void add_long(Document &doc, valueno slot, int64_t in_data, int8_t &err)
+{
+    try
+    {
+        err = 0;
+        std::string data = sortable_serialise(in_data);
+        doc.add_value(slot, data);
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+    }
+}
+
 void add_float(Document &doc, valueno slot, float in_data, int8_t &err)
 {
     try
@@ -379,3 +406,17 @@ void set_data(Document &doc, rust::Str data, int8_t &err)
         err = get_err_code(ex.get_type());
     }
 }
+
+void add_boolean_term(Document &doc, rust::Str data, int8_t &err)
+{
+    try
+    {
+        err = 0;
+        doc.add_boolean_term(std::string(data));
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+    }
+}
+
