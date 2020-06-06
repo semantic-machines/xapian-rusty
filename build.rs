@@ -43,6 +43,7 @@ fn main() {
     cxx_build::bridges(sources).file("xapian-bind.cc").flag_if_supported("-std=c++14").compile("xapian-rusty");
 
     println!("cargo:rustc-link-lib=xapianm");
+    println!("cargo:rustc-link-lib=m");
 }
 
 fn target_dir() -> Result<PathBuf> {
