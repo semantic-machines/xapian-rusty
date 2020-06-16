@@ -21,6 +21,9 @@ pub(crate) mod ffi {
         pub(crate) fn new_database(err: &mut i8) -> UniquePtr<Database>;
         pub(crate) fn new_database_with_path(path: &str, db_type: i8, err: &mut i8) -> UniquePtr<Database>;
         pub(crate) fn database_reopen(db: &mut Database, err: &mut i8);
+        pub(crate) fn database_close(db: &mut Database, err: &mut i8);
+        pub(crate) fn new_enquire(db: &mut Database, err: &mut i8) -> UniquePtr<Enquire>;
+        pub(crate) fn add_database(db: &mut Database, add_db: &mut Database, err: &mut i8);
 
         pub(crate) type Stem;
         pub(crate) fn new_stem(lang: &str, err: &mut i8) -> UniquePtr<Stem>;
@@ -51,7 +54,78 @@ pub(crate) mod ffi {
         pub(crate) fn add_double(doc: &mut Document, slot: u32, data: f64, err: &mut i8);
         pub(crate) fn set_data(doc: &mut Document, data: &str, err: &mut i8);
         pub(crate) fn add_boolean_term(doc: &mut Document, data: &str, err: &mut i8);
+
+        pub(crate) type Enquire;
+
+        pub(crate) type QueryParser;
+        pub(crate) fn new_query_parser(err: &mut i8) -> UniquePtr<QueryParser>;
+        pub(crate) fn set_max_wildcard_expansion(qp: &mut QueryParser, limit: i32, err: &mut i8);
+        pub(crate) fn set_stemmer_to_qp(qp: &mut QueryParser, stem: &mut Stem, err: &mut i8);
+        pub(crate) fn set_database(db: &mut QueryParser, add_db: &mut Database, err: &mut i8);
     }
+}
+
+pub struct QueryParser {
+    pub cxxp: UniquePtr<ffi::QueryParser>,
+}
+
+#[allow(unused_unsafe)]
+impl QueryParser {
+    pub fn new() -> Result<Self, i8> {
+        unsafe {
+            let mut err = 0;
+            let obj = ffi::new_query_parser(&mut err);
+
+            if err == 0 {
+                Ok(Self {
+                    cxxp: obj,
+                })
+            } else {
+                Err(err)
+            }
+        }
+    }
+
+    pub fn set_max_wildcard_expansion(&mut self, limit: i32) -> Result<(), i8> {
+        unsafe {
+            let mut err = 0;
+            ffi::set_max_wildcard_expansion(&mut self.cxxp, limit, &mut err);
+
+            if err == 0 {
+                Ok(())
+            } else {
+                Err(err)
+            }
+        }
+    }
+
+    pub fn set_stemmer(&mut self, stem: &mut Stem) -> Result<(), i8> {
+        unsafe {
+            let mut err = 0;
+            ffi::set_stemmer_to_qp(&mut self.cxxp, &mut stem.cxxp, &mut err);
+            if err < 0 {
+                return Err(err);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn set_database(&mut self, database: &mut Database) -> Result<(), i8> {
+        unsafe {
+            let mut err = 0;
+            ffi::set_database(&mut self.cxxp, &mut database.cxxp, &mut err);
+
+            if err == 0 {
+                Ok(())
+            } else {
+                Err(err)
+            }
+        }
+    }
+}
+
+pub struct Enquire {
+    pub cxxp: UniquePtr<ffi::Enquire>,
 }
 
 pub struct Database {
@@ -59,12 +133,72 @@ pub struct Database {
 }
 
 #[allow(unused_unsafe)]
-impl Default for Database {
-    fn default() -> Self {
+impl Database {
+    pub fn new() -> Result<Self, i8> {
         unsafe {
             let mut err = 0;
-            Self {
-                cxxp: ffi::new_database(&mut err),
+            let obj = ffi::new_database(&mut err);
+
+            if err == 0 {
+                Ok(Self {
+                    cxxp: obj,
+                })
+            } else {
+                Err(err)
+            }
+        }
+    }
+
+    pub fn new_with_path(path: &str, db_type: i8) -> Result<Self, i8> {
+        unsafe {
+            let mut err = 0;
+            let obj = ffi::new_database_with_path(path, db_type, &mut err);
+
+            if err == 0 {
+                Ok(Self {
+                    cxxp: obj,
+                })
+            } else {
+                Err(err)
+            }
+        }
+    }
+
+    pub fn add_database(&mut self, database: &mut Database) -> Result<(), i8> {
+        unsafe {
+            let mut err = 0;
+            ffi::add_database(&mut self.cxxp, &mut database.cxxp, &mut err);
+
+            if err == 0 {
+                Ok(())
+            } else {
+                Err(err)
+            }
+        }
+    }
+
+    pub fn reopen(&mut self) -> Result<(), i8> {
+        unsafe {
+            let mut err = 0;
+            ffi::database_reopen(&mut self.cxxp, &mut err);
+
+            if err == 0 {
+                Ok(())
+            } else {
+                Err(err)
+            }
+        }
+    }
+
+    pub fn close(&mut self) -> Result<(), i8> {
+        unsafe {
+            let mut err = 0;
+            ffi::database_close(&mut self.cxxp, &mut err);
+
+            if err == 0 {
+                Ok(())
+            } else {
+                Err(err)
             }
         }
     }

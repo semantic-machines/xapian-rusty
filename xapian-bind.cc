@@ -105,6 +105,30 @@ std::unique_ptr<Database> new_database_with_path(rust::Str path, int8_t db_type,
     }
 }
 
+void add_database(Database &db, Database &add_db, int8_t &err)
+{
+    try
+    {
+        db.add_database(add_db);
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+    }
+}
+
+void database_close(Database &db, int8_t &err)
+{
+    try
+    {
+        db.close();
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+    }
+}
+
 void database_reopen(Database &db, int8_t &err)
 {
     try
@@ -116,6 +140,23 @@ void database_reopen(Database &db, int8_t &err)
         err = get_err_code(ex.get_type());
     }
 }
+
+std::unique_ptr<Enquire> new_enquire(Database &db, int8_t &err)
+{
+    try
+    {
+        err = 0;
+        return std::make_unique<Xapian::Enquire>(db);
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+        return NULL;
+    }
+}
+
+
+//////
 
 std::unique_ptr<Stem> new_stem(rust::Str lang, int8_t &err)
 {
@@ -420,3 +461,54 @@ void add_boolean_term(Document &doc, rust::Str data, int8_t &err)
     }
 }
 
+//////
+
+std::unique_ptr<QueryParser> new_query_parser(int8_t &err)
+{
+    try
+    {
+        err = 0;
+        return std::make_unique<Xapian::QueryParser>();
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+        return NULL;
+    }
+}
+
+void set_max_wildcard_expansion(QueryParser &qp, int32_t limit, int8_t &err) {
+    try
+    {
+        err = 0;
+        qp.set_max_wildcard_expansion (limit);
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+        return;
+    }
+}
+
+void set_stemmer_to_qp(QueryParser &qp, Stem &stem, int8_t &err) {
+    try
+    {
+        qp.set_stemmer(stem);
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+    }
+}
+
+void set_database(QueryParser &qp, Database &db, int8_t &err)
+{
+    try
+    {
+        qp.set_database(db);
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+    }
+}
