@@ -614,3 +614,75 @@ bool query_is_empty (Query &q, int8_t &err) {
         return true;
     }
 }
+
+////
+
+std::unique_ptr<MSet> get_mset(Enquire &en, int32_t from, int32_t size, int8_t &err) {
+    try
+    {
+        err = 0;
+        return std::make_unique<Xapian::MSet>(en.get_mset(from, size));
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+        return NULL;
+    }
+}
+
+/////
+
+int get_matches_estimated (MSet &set, int8_t &err) {
+    try
+    {
+        err = 0;
+        return set.get_matches_estimated();
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+        return -1;
+    }
+}
+
+int mset_size (MSet &set, int8_t &err) {
+    try
+    {
+        err = 0;
+        return set.size();
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+        return -1;
+    }
+}
+
+std::unique_ptr<Document> get_doc_by_index (MSet &set, int32_t index, int8_t &err) {
+    try
+    {
+        err = 0;
+        return std::make_unique<Xapian::Document>(set.get_doc_by_index(index));
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+        return NULL;
+    }
+}
+
+/////
+
+const std::string &get_doc_data (Document &doc) {
+    try
+    {
+        //err = 0;
+        return doc.get_data();
+    }
+    catch (Error ex)
+    {
+        //err = get_err_code(ex.get_type());
+        return NULL;
+    }
+}
+

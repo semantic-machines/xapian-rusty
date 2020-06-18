@@ -225,6 +225,8 @@ pub enum FeatureFlag {
     FLAG_DEFAULT = FeatureFlag::FLAG_PHRASE as i16 | FeatureFlag::FLAG_BOOLEAN as i16 | FeatureFlag::FLAG_LOVEHATE as i16,
 }
 
+use cxx::CxxString;
+
 #[cxx::bridge(namespace = org::example)]
 pub(crate) mod ffi {
 
@@ -267,9 +269,16 @@ pub(crate) mod ffi {
         pub(crate) fn add_float(doc: &mut Document, slot: u32, data: f32, err: &mut i8);
         pub(crate) fn add_double(doc: &mut Document, slot: u32, data: f64, err: &mut i8);
         pub(crate) fn set_data(doc: &mut Document, data: &str, err: &mut i8);
+        pub(crate) fn get_doc_data(doc: &mut Document) -> &CxxString;
         pub(crate) fn add_boolean_term(doc: &mut Document, data: &str, err: &mut i8);
 
+        pub(crate) type MSet;
+        pub(crate) fn get_matches_estimated(set: &mut MSet, err: &mut i8) -> i32;
+        pub(crate) fn mset_size(set: &mut MSet, err: &mut i8) -> i32;
+        pub(crate) fn get_doc_by_index(set: &mut MSet, index: i32, err: &mut i8) -> UniquePtr<Document>;
+
         pub(crate) type Enquire;
+        pub(crate) fn get_mset(en: &mut Enquire, from: i32, size: i32, err: &mut i8) -> UniquePtr<MSet>;
 
         pub(crate) type QueryParser;
         pub(crate) fn new_query_parser(err: &mut i8) -> UniquePtr<QueryParser>;
@@ -453,8 +462,99 @@ impl QueryParser {
     }
 }
 
+pub struct MSetIterator<'a> {
+    pub mset: &'a mut MSet,
+    pub index: i32,
+}
+
+impl<'a> MSetIterator<'a> {
+    pub fn is_next(&mut self) -> Result<bool, i8> {
+        unsafe {
+            let mut err = 0;
+            let res = ffi::mset_size(&mut self.mset.cxxp, &mut err) > self.index;
+
+            if err == 0 {
+                Ok(res)
+            } else {
+                Err(err)
+            }
+        }
+    }
+
+    pub fn next(&mut self) -> Result<(), i8> {
+        unsafe {
+            let mut err = 0;
+            if ffi::mset_size(&mut self.mset.cxxp, &mut err) > self.index {
+                self.index += 1;
+            }
+
+            if err == 0 {
+                Ok(())
+            } else {
+                Err(err)
+            }
+        }
+    }
+
+    pub fn get_document_data(&mut self, index: i32) -> Result<String, i8> {
+        unsafe {
+            let mut err = 0;
+            let mut doc = ffi::get_doc_by_index(&mut self.mset.cxxp, index, &mut err);
+
+            if err == 0 {
+                Ok(ffi::get_doc_data(&mut doc).to_string())
+            } else {
+                Err(err)
+            }
+        }
+    }
+}
+
+pub struct MSet {
+    pub cxxp: UniquePtr<ffi::MSet>,
+}
+
+impl MSet {
+    pub fn iterator(&mut self) -> Result<MSetIterator, i8> {
+        Ok(MSetIterator {
+            mset: self,
+            index: 0,
+        })
+    }
+
+    pub fn get_matches_estimated(&mut self) -> Result<i32, i8> {
+        unsafe {
+            let mut err = 0;
+            let res = ffi::get_matches_estimated(&mut self.cxxp, &mut err);
+
+            if err == 0 {
+                Ok(res)
+            } else {
+                Err(err)
+            }
+        }
+    }
+}
+
 pub struct Enquire {
     pub cxxp: UniquePtr<ffi::Enquire>,
+}
+
+impl Enquire {
+    pub fn get_mset(&mut self, from: i32, size: i32) -> Result<MSet, i8> {
+        unsafe {
+            let mut err = 0;
+            let obj = ffi::get_mset(&mut self.cxxp, from, size, &mut err);
+
+            if err == 0 {
+                Ok(MSet {
+                    cxxp: obj,
+                })
+            } else {
+                Err(err)
+            }
+        }
+    }
 }
 
 pub struct Database {

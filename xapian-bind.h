@@ -45,6 +45,7 @@ void add_float(Document &doc, valueno slot, float in_data, int8_t &err);
 void add_double(Document &doc, valueno slot, double in_data, int8_t &err);
 void set_data (Document &doc, rust::Str data, int8_t &err);
 void add_boolean_term(Document &doc, rust::Str data, int8_t &err);
+const std::string &get_doc_data (Document &doc);
 
 //
 std::unique_ptr<QueryParser> new_query_parser(int8_t &err);
@@ -60,3 +61,14 @@ std::unique_ptr<Query> new_query_range(int32_t op, int32_t slot, double begin, d
 std::unique_ptr<Query> new_query_double_with_prefix(rust::Str prefix, double _d, int8_t &err);
 std::unique_ptr<Query> add_right_query(Query &this_q, int32_t _op, Query &q, int8_t &err);
 bool query_is_empty (Query &q, int8_t &err);
+
+//
+std::unique_ptr<MSet> get_mset(Enquire &en, int32_t from, int32_t size, int8_t &err);
+
+//
+int get_matches_estimated (MSet &set, int8_t &err);
+int mset_size (MSet &set, int8_t &err);
+std::unique_ptr<Document> get_doc_by_index (MSet &set, int32_t index, int8_t &err);
+
+
+
