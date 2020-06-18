@@ -11,6 +11,220 @@ pub const DB_CREATE: i8 = 2;
 /** Overwrite existing db; create if none exists. */
 pub const DB_CREATE_OR_OVERWRITE: i8 = 3;
 
+/// Enum of possible query operations
+/// #[repr(i32)]
+pub enum XapianOp {
+    /// Return iff both subqueries are satisfied
+    OP_AND,
+
+    /// Return if either subquery is satisfied
+    OP_OR,
+
+    /// Return if left but not right satisfied
+    OP_AND_NOT,
+
+    /// Return if one query satisfied, but not both
+    OP_XOR,
+
+    /// Return iff left satisfied, but use weights from both
+    OP_AND_MAYBE,
+
+    /// As AND, but use only weights from left subquery
+    OP_FILTER,
+
+    /** Find occurrences of a list of terms with all the terms
+     *  occurring within a specified window of positions.
+     *
+     *  Each occurrence of a term must be at a different position,
+     *  but the order they appear in is irrelevant.
+     *
+     *  The window parameter should be specified for this operation,
+     *  but will default to the number of terms in the list.
+     */
+    OP_NEAR,
+
+    /** Find occurrences of a list of terms with all the terms
+     *  occurring within a specified window of positions, and all
+     *  the terms appearing in the order specified.
+     *
+     *  Each occurrence of a term must be at a different position.
+     *
+     *  The window parameter should be specified for this operation,
+     *  but will default to the number of terms in the list.
+     */
+    OP_PHRASE,
+
+    /** Filter by a range test on a document value. */
+    OP_VALUE_RANGE,
+
+    /** Scale the weight of a subquery by the specified factor.
+     *
+     *  A factor of 0 means this subquery will contribute no weight to
+     *  the query - it will act as a purely boolean subquery.
+     *
+     *  If the factor is negative, Xapian::InvalidArgumentError will
+     *  be thrown.
+     */
+    OP_SCALE_WEIGHT,
+
+    /** Pick the best N subqueries and combine with OP_OR.
+     *
+     *  If you want to implement a feature which finds documents
+     *  similar to a piece of text, an obvious approach is to build an
+     *  "OR" query from all the terms in the text, and run this query
+     *  against a database containing the documents.  However such a
+     *  query can contain a lots of terms and be quite slow to perform,
+     *  yet many of these terms don't contribute usefully to the
+     *  results.
+     *
+     *  The OP_ELITE_SET operator can be used instead of OP_OR in this
+     *  situation.  OP_ELITE_SET selects the most important ''N'' terms
+     *  and then acts as an OP_OR query with just these, ignoring any
+     *  other terms.  This will usually return results just as good as
+     *  the full OP_OR query, but much faster.
+     *
+     *  In general, the OP_ELITE_SET operator can be used when you have
+     *  a large OR query, but it doesn't matter if the search
+     *  completely ignores some of the less important terms in the
+     *  query.
+     *
+     *  The subqueries don't have to be terms, but if they aren't then
+     *  OP_ELITE_SET will look at the estimated frequencies of the
+     *  subqueries and so could pick a subset which don't actually
+     *  match any documents even if the full OR would match some.
+     *
+     *  You can specify a parameter to the query constructor which
+     *  control the number of terms which OP_ELITE_SET will pick.  If
+     *  not specified, this defaults to 10 (or
+     *  <code>ceil(sqrt(number_of_subqueries))</code> if there are more
+     *  than 100 subqueries, but this rather arbitrary special case
+     *  will be dropped in 1.3.0).  For example, this will pick the
+     *  best 7 terms:
+     *
+     *  <pre>
+     *  Xapian::Query query(Xapian::Query::OP_ELITE_SET, subqs.begin(), subqs.end(), 7);
+     *  </pre>
+     *
+     * If the number of subqueries is less than this threshold,
+     * OP_ELITE_SET behaves identically to OP_OR.
+     */
+    OP_ELITE_SET,
+
+    /** Filter by a greater-than-or-equal test on a document value. */
+    OP_VALUE_GE,
+
+    /** Filter by a less-than-or-equal test on a document value. */
+    OP_VALUE_LE,
+
+    /** Treat a set of queries as synonyms.
+     *
+     *  This returns all results which match at least one of the
+     *  queries, but weighting as if all the sub-queries are instances
+     *  of the same term: so multiple matching terms for a document
+     *  increase the wdf value used, and the term frequency is based on
+     *  the number of documents which would match an OR of all the
+     *  subqueries.
+     *
+     *  The term frequency used will usually be an approximation,
+     *  because calculating the precise combined term frequency would
+     *  be overly expensive.
+     *
+     *  Identical to OP_OR, except for the weightings returned.
+     */
+    OP_SYNONYM,
+}
+
+/// Enum of feature flag
+#[repr(i16)]
+pub enum FeatureFlag {
+    /// Support AND, OR, etc and bracketed subexpressions.
+    FLAG_BOOLEAN = 1,
+    /// Support quoted phrases.
+    FLAG_PHRASE = 2,
+    /// Support + and -.
+    FLAG_LOVEHATE = 4,
+    /// Support AND, OR, etc even if they aren't in ALLCAPS.
+    FLAG_BOOLEAN_ANY_CASE = 8,
+    /** Support right truncation (e.g. Xap*).
+     *
+     *  Currently you can't use wildcards with boolean filter prefixes,
+     *  or in a phrase (either an explicitly quoted one, or one implicitly
+     *  generated by hyphens or other punctuation).
+     *
+     *  NB: You need to tell the QueryParser object which database to
+     *  expand wildcards from by calling set_database.
+     */
+    FLAG_WILDCARD = 16,
+    /** Allow queries such as 'NOT apples'.
+     *
+     *  These require the use of a list of all documents in the database
+     *  which is potentially expensive, so this feature isn't enabled by
+     *  default.
+     */
+    FLAG_PURE_NOT = 32,
+    /** Enable partial matching.
+     *
+     *  Partial matching causes the parser to treat the query as a
+     *  "partially entered" search.  This will automatically treat the
+     *  final word as a wildcarded match, unless it is followed by
+     *  whitespace, to produce more stable results from interactive
+     *  searches.
+     *
+     *  Currently FLAG_PARTIAL doesn't do anything if the final word
+     *  in the query has a boolean filter prefix, or if it is in a phrase
+     *  (either an explicitly quoted one, or one implicitly generated by
+     *  hyphens or other punctuation).  It also doesn't do anything if
+     *  if the final word is part of a value range.
+     *
+     *  NB: You need to tell the QueryParser object which database to
+     *  expand wildcards from by calling set_database.
+     */
+    FLAG_PARTIAL = 64,
+
+    /** Enable spelling correction.
+     *
+     *  For each word in the query which doesn't exist as a term in the
+     *  database, Database::get_spelling_suggestion() will be called and if
+     *  a suggestion is returned, a corrected version of the query string
+     *  will be built up which can be read using
+     *  QueryParser::get_corrected_query_string().  The query returned is
+     *  based on the uncorrected query string however - if you want a
+     *  parsed query based on the corrected query string, you must call
+     *  QueryParser::parse_query() again.
+     *
+     *  NB: You must also call set_database() for this to work.
+     */
+    FLAG_SPELLING_CORRECTION = 128,
+
+    /** Enable synonym operator '~'.
+     *
+     *  NB: You must also call set_database() for this to work.
+     */
+    FLAG_SYNONYM = 256,
+
+    /** Enable automatic use of synonyms for single terms.
+     *
+     *  NB: You must also call set_database() for this to work.
+     */
+    FLAG_AUTO_SYNONYMS = 512,
+
+    /** Enable automatic use of synonyms for single terms and groups of
+     *  terms.
+     *
+     *  NB: You must also call set_database() for this to work.
+     */
+    FLAG_AUTO_MULTIWORD_SYNONYMS = 1024 | FeatureFlag::FLAG_AUTO_SYNONYMS as i16,
+
+    /** The default flags.
+     *
+     *  Used if you don't explicitly pass any to @a parse_query().
+     *  The default flags are FLAG_PHRASE|FLAG_BOOLEAN|FLAG_LOVEHATE.
+     *
+     *  Added in Xapian 1.0.11.
+     */
+    FLAG_DEFAULT = FeatureFlag::FLAG_PHRASE as i16 | FeatureFlag::FLAG_BOOLEAN as i16 | FeatureFlag::FLAG_LOVEHATE as i16,
+}
+
 #[cxx::bridge(namespace = org::example)]
 pub(crate) mod ffi {
 
@@ -61,7 +275,94 @@ pub(crate) mod ffi {
         pub(crate) fn new_query_parser(err: &mut i8) -> UniquePtr<QueryParser>;
         pub(crate) fn set_max_wildcard_expansion(qp: &mut QueryParser, limit: i32, err: &mut i8);
         pub(crate) fn set_stemmer_to_qp(qp: &mut QueryParser, stem: &mut Stem, err: &mut i8);
-        pub(crate) fn set_database(db: &mut QueryParser, add_db: &mut Database, err: &mut i8);
+        pub(crate) fn set_database(qp: &mut QueryParser, add_db: &mut Database, err: &mut i8);
+        pub(crate) fn parse_query(qp: &mut QueryParser, query_string: &str, flags: i16, err: &mut i8) -> UniquePtr<Query>;
+        pub(crate) fn parse_query_with_prefix(qp: &mut QueryParser, query_string: &str, flags: i16, prefix: &str, err: &mut i8) -> UniquePtr<Query>;
+
+        pub(crate) type Query;
+        pub(crate) fn new_query(err: &mut i8) -> UniquePtr<Query>;
+        pub(crate) fn new_query_range(op: i32, slot: i32, begin: f64, end: f64, err: &mut i8) -> UniquePtr<Query>;
+        pub(crate) fn add_right_query(this_q: &mut Query, op: i32, q: &mut Query, err: &mut i8) -> UniquePtr<Query>;
+        pub(crate) fn new_query_double_with_prefix(prefix: &str, d: f64, err: &mut i8) -> UniquePtr<Query>;
+        pub(crate) fn query_is_empty(this_q: &mut Query, err: &mut i8) -> bool;
+    }
+}
+
+pub struct Query {
+    pub cxxp: UniquePtr<ffi::Query>,
+}
+
+impl Query {
+    pub fn new() -> Result<Self, i8> {
+        unsafe {
+            let mut err = 0;
+            let obj = ffi::new_query(&mut err);
+
+            if err == 0 {
+                Ok(Self {
+                    cxxp: obj,
+                })
+            } else {
+                Err(err)
+            }
+        }
+    }
+
+    pub fn new_range(op: XapianOp, slot: u32, begin: f64, end: f64) -> Result<Self, i8> {
+        unsafe {
+            let mut err = 0;
+            let obj = ffi::new_query_range(op as i32, slot as i32, begin, end, &mut err);
+
+            if err == 0 {
+                Ok(Self {
+                    cxxp: obj,
+                })
+            } else {
+                Err(err)
+            }
+        }
+    }
+
+    pub fn add_right(&mut self, op: XapianOp, q: &mut Query) -> Result<Self, i8> {
+        unsafe {
+            let mut err = 0;
+            let obj = ffi::add_right_query(&mut self.cxxp, op as i32, &mut q.cxxp, &mut err);
+
+            if err == 0 {
+                Ok(Self {
+                    cxxp: obj,
+                })
+            } else {
+                Err(err)
+            }
+        }
+    }
+
+    pub fn new_double_with_prefix(prefix: &str, d: f64) -> Result<Self, i8> {
+        unsafe {
+            let mut err = 0;
+            let obj = ffi::new_query_double_with_prefix(prefix, d, &mut err);
+
+            if err == 0 {
+                Ok(Self {
+                    cxxp: obj,
+                })
+            } else {
+                Err(err)
+            }
+        }
+    }
+
+    pub fn is_empty(&mut self) -> bool {
+        unsafe {
+            let mut err = 0;
+            let res = ffi::query_is_empty(&mut self.cxxp, &mut err);
+            if err == 0 {
+                res
+            } else {
+                true
+            }
+        }
     }
 }
 
@@ -119,6 +420,34 @@ impl QueryParser {
                 Ok(())
             } else {
                 Err(err)
+            }
+        }
+    }
+
+    pub fn parse_query(&mut self, query: &str, flags: i16) -> Result<Query, i8> {
+        unsafe {
+            let mut err = 0;
+            let obj = ffi::parse_query(&mut self.cxxp, query, flags, &mut err);
+            if err == 0 {
+                Ok(Query {
+                    cxxp: obj,
+                })
+            } else {
+                return Err(err);
+            }
+        }
+    }
+
+    pub fn parse_query_with_prefix(&mut self, query: &str, flags: i16, prefix: &str) -> Result<Query, i8> {
+        unsafe {
+            let mut err = 0;
+            let obj = ffi::parse_query_with_prefix(&mut self.cxxp, query, flags, prefix, &mut err);
+            if err == 0 {
+                Ok(Query {
+                    cxxp: obj,
+                })
+            } else {
+                return Err(err);
             }
         }
     }

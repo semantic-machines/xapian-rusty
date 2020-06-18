@@ -493,6 +493,7 @@ void set_max_wildcard_expansion(QueryParser &qp, int32_t limit, int8_t &err) {
 void set_stemmer_to_qp(QueryParser &qp, Stem &stem, int8_t &err) {
     try
     {
+        err = 0;
         qp.set_stemmer(stem);
     }
     catch (Error ex)
@@ -505,10 +506,111 @@ void set_database(QueryParser &qp, Database &db, int8_t &err)
 {
     try
     {
+        err = 0;
         qp.set_database(db);
     }
     catch (Error ex)
     {
         err = get_err_code(ex.get_type());
+    }
+}
+
+std::unique_ptr<Query> parse_query(QueryParser &qp, rust::Str data, int16_t flags, int8_t &err) {
+    try
+    {
+        err = 0;
+        return std::make_unique<Xapian::Query>(qp.parse_query(std::string(data), flags));
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+    }
+}
+
+std::unique_ptr<Query> parse_query_with_prefix(QueryParser &qp, rust::Str query, int16_t flags, rust::Str prefix, int8_t &err) {
+    try
+    {
+        err = 0;
+        return std::make_unique<Xapian::Query>(qp.parse_query(std::string(query), flags, std::string(prefix)));
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+    }
+}
+
+////////
+
+std::unique_ptr<Query> new_query(int8_t &err) {
+    try
+    {
+        err = 0;
+        return std::make_unique<Xapian::Query>();
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+        return NULL;
+    }
+}
+
+std::unique_ptr<Query> new_query_range(int32_t _op, int32_t slot, double _begin, double _end, int8_t &err) {
+    try
+    {
+        err = 0;
+
+        std::string s_begin = Xapian::sortable_serialise(_begin);
+        std::string s_end = Xapian::sortable_serialise(_end);
+        Xapian::Query _query ((Xapian::Query::op)_op, slot, s_begin, s_end);
+
+        return std::make_unique<Xapian::Query>(_query);
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+        return NULL;
+    }
+}
+
+std::unique_ptr<Query> add_right_query(Query &this_q, int32_t _op, Query &q, int8_t &err) {
+    try
+    {
+        err = 0;
+        return std::make_unique<Xapian::Query>((Xapian::Query::op)_op, this_q, q);
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+        return NULL;
+    }
+}
+
+std::unique_ptr<Query> new_query_double_with_prefix(rust::Str prefix, double _d, int8_t &err) {
+    try
+    {
+        err = 0;
+
+        std::string s = std::string(prefix) + Xapian::sortable_serialise(_d);
+
+        Xapian::Query _query (s);
+        return std::make_unique<Xapian::Query>(_query);
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+        return NULL;
+    }
+}
+
+bool query_is_empty (Query &q, int8_t &err) {
+    try
+    {
+        err = 0;
+        return q.empty();
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+        return true;
     }
 }

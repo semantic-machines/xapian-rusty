@@ -51,3 +51,12 @@ std::unique_ptr<QueryParser> new_query_parser(int8_t &err);
 void set_max_wildcard_expansion(QueryParser &qp, int32_t limit, int8_t &err);
 void set_stemmer_to_qp(QueryParser &qp, Stem &stem, int8_t &err);
 void set_database(QueryParser &qp, Database &db, int8_t &err);
+std::unique_ptr<Query> parse_query(QueryParser &qp, rust::Str data, int16_t flags, int8_t &err);
+std::unique_ptr<Query> parse_query_with_prefix(QueryParser &qp, rust::Str query, int16_t flags, rust::Str prefix, int8_t &err);
+
+//
+std::unique_ptr<Query> new_query(int8_t &err);
+std::unique_ptr<Query> new_query_range(int32_t op, int32_t slot, double begin, double end, int8_t &err);
+std::unique_ptr<Query> new_query_double_with_prefix(rust::Str prefix, double _d, int8_t &err);
+std::unique_ptr<Query> add_right_query(Query &this_q, int32_t _op, Query &q, int8_t &err);
+bool query_is_empty (Query &q, int8_t &err);
