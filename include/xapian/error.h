@@ -80,7 +80,7 @@ class XAPIAN_VISIBILITY_DEFAULT Error {
     bool already_handled;
 
     /// Don't allow assignment of the base class.
-    void operator=(const Error &o);
+//    void operator=(const Error &o);
 
   protected:
     /** @private @internal

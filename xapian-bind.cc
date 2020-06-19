@@ -173,12 +173,11 @@ std::unique_ptr<Stem> new_stem(rust::Str lang, int8_t &err)
 }
 
 ///////////////////////////////////////////////////////////////
-std::unique_ptr<WritableDatabase> new_writable_database_with_path(rust::Str path, int8_t action, int8_t db_type, int8_t &err)
+std::unique_ptr<WritableDatabase> new_writable_database_with_path(rust::Str path, int8_t action, int8_t &err)
 {
     try
     {
         err = 0;
-
         return std::make_unique<WritableDatabase>(std::string(path), action);
     }
     catch (Error ex)
@@ -524,6 +523,7 @@ std::unique_ptr<Query> parse_query(QueryParser &qp, rust::Str data, int16_t flag
     catch (Error ex)
     {
         err = get_err_code(ex.get_type());
+        return NULL;
     }
 }
 
@@ -536,6 +536,7 @@ std::unique_ptr<Query> parse_query_with_prefix(QueryParser &qp, rust::Str query,
     catch (Error ex)
     {
         err = get_err_code(ex.get_type());
+        return NULL;
     }
 }
 
@@ -630,6 +631,30 @@ std::unique_ptr<MSet> get_mset(Enquire &en, int32_t from, int32_t size, int8_t &
     }
 }
 
+void set_query(Enquire &en, Query &query, int8_t &err) {
+    try
+    {
+        err = 0;
+        en.set_query(query);
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+    }
+}
+
+void set_sort_by_key(Enquire &en, MultiValueKeyMaker &sorter, bool reverse, int8_t &err) {
+    try
+    {
+        err = 0;
+        en.set_sort_by_key(&sorter, reverse);
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+    }
+}
+
 /////
 
 int get_matches_estimated (MSet &set, int8_t &err) {
@@ -686,3 +711,29 @@ const std::string &get_doc_data (Document &doc) {
     }
 }
 
+/////
+
+std::unique_ptr<MultiValueKeyMaker> new_multi_value_key_maker (int8_t &err) {
+    try
+    {
+        err = 0;
+        return std::make_unique<Xapian::MultiValueKeyMaker>();
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+        return NULL;
+    }
+}
+
+void add_value_to_multi_value_key_maker(MultiValueKeyMaker &this_m, uint32_t slot, bool asc_desc, int8_t &err) {
+    try
+    {
+        err = 0;
+        this_m.add_value(slot, asc_desc);
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+    }
+}

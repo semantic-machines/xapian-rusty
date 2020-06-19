@@ -15,22 +15,22 @@ pub const DB_CREATE_OR_OVERWRITE: i8 = 3;
 /// #[repr(i32)]
 pub enum XapianOp {
     /// Return iff both subqueries are satisfied
-    OP_AND,
+    OpAnd,
 
     /// Return if either subquery is satisfied
-    OP_OR,
+    OpOr,
 
     /// Return if left but not right satisfied
-    OP_AND_NOT,
+    OpAndNot,
 
     /// Return if one query satisfied, but not both
-    OP_XOR,
+    OpXor,
 
     /// Return iff left satisfied, but use weights from both
-    OP_AND_MAYBE,
+    OpAndMaybe,
 
     /// As AND, but use only weights from left subquery
-    OP_FILTER,
+    OpFilter,
 
     /** Find occurrences of a list of terms with all the terms
      *  occurring within a specified window of positions.
@@ -41,7 +41,7 @@ pub enum XapianOp {
      *  The window parameter should be specified for this operation,
      *  but will default to the number of terms in the list.
      */
-    OP_NEAR,
+    OpNear,
 
     /** Find occurrences of a list of terms with all the terms
      *  occurring within a specified window of positions, and all
@@ -52,10 +52,10 @@ pub enum XapianOp {
      *  The window parameter should be specified for this operation,
      *  but will default to the number of terms in the list.
      */
-    OP_PHRASE,
+    OpPhrase,
 
     /** Filter by a range test on a document value. */
-    OP_VALUE_RANGE,
+    OpValueRange,
 
     /** Scale the weight of a subquery by the specified factor.
      *
@@ -65,7 +65,7 @@ pub enum XapianOp {
      *  If the factor is negative, Xapian::InvalidArgumentError will
      *  be thrown.
      */
-    OP_SCALE_WEIGHT,
+    OpScaleWeight,
 
     /** Pick the best N subqueries and combine with OP_OR.
      *
@@ -108,13 +108,13 @@ pub enum XapianOp {
      * If the number of subqueries is less than this threshold,
      * OP_ELITE_SET behaves identically to OP_OR.
      */
-    OP_ELITE_SET,
+    OpEliteSet,
 
     /** Filter by a greater-than-or-equal test on a document value. */
-    OP_VALUE_GE,
+    OpValueGe,
 
     /** Filter by a less-than-or-equal test on a document value. */
-    OP_VALUE_LE,
+    OpValueLe,
 
     /** Treat a set of queries as synonyms.
      *
@@ -131,20 +131,20 @@ pub enum XapianOp {
      *
      *  Identical to OP_OR, except for the weightings returned.
      */
-    OP_SYNONYM,
+    OpSynonym,
 }
 
 /// Enum of feature flag
 #[repr(i16)]
 pub enum FeatureFlag {
     /// Support AND, OR, etc and bracketed subexpressions.
-    FLAG_BOOLEAN = 1,
+    FlagBoolean = 1,
     /// Support quoted phrases.
-    FLAG_PHRASE = 2,
+    FlagPhrase = 2,
     /// Support + and -.
-    FLAG_LOVEHATE = 4,
+    FlagLovehate = 4,
     /// Support AND, OR, etc even if they aren't in ALLCAPS.
-    FLAG_BOOLEAN_ANY_CASE = 8,
+    FlagBooleanAnyCase = 8,
     /** Support right truncation (e.g. Xap*).
      *
      *  Currently you can't use wildcards with boolean filter prefixes,
@@ -154,14 +154,14 @@ pub enum FeatureFlag {
      *  NB: You need to tell the QueryParser object which database to
      *  expand wildcards from by calling set_database.
      */
-    FLAG_WILDCARD = 16,
+    FlagWildcard = 16,
     /** Allow queries such as 'NOT apples'.
      *
      *  These require the use of a list of all documents in the database
      *  which is potentially expensive, so this feature isn't enabled by
      *  default.
      */
-    FLAG_PURE_NOT = 32,
+    FlagPureNot = 32,
     /** Enable partial matching.
      *
      *  Partial matching causes the parser to treat the query as a
@@ -179,7 +179,7 @@ pub enum FeatureFlag {
      *  NB: You need to tell the QueryParser object which database to
      *  expand wildcards from by calling set_database.
      */
-    FLAG_PARTIAL = 64,
+    FlagPartial = 64,
 
     /** Enable spelling correction.
      *
@@ -194,26 +194,26 @@ pub enum FeatureFlag {
      *
      *  NB: You must also call set_database() for this to work.
      */
-    FLAG_SPELLING_CORRECTION = 128,
+    FlagSpellingCorrection = 128,
 
     /** Enable synonym operator '~'.
      *
      *  NB: You must also call set_database() for this to work.
      */
-    FLAG_SYNONYM = 256,
+    FlagSynonym = 256,
 
     /** Enable automatic use of synonyms for single terms.
      *
      *  NB: You must also call set_database() for this to work.
      */
-    FLAG_AUTO_SYNONYMS = 512,
+    FlagAutoSynonyms = 512,
 
     /** Enable automatic use of synonyms for single terms and groups of
      *  terms.
      *
      *  NB: You must also call set_database() for this to work.
      */
-    FLAG_AUTO_MULTIWORD_SYNONYMS = 1024 | FeatureFlag::FLAG_AUTO_SYNONYMS as i16,
+    FlagAutoMultiwordSynonyms = 1024 | FeatureFlag::FlagAutoSynonyms as i16,
 
     /** The default flags.
      *
@@ -222,10 +222,10 @@ pub enum FeatureFlag {
      *
      *  Added in Xapian 1.0.11.
      */
-    FLAG_DEFAULT = FeatureFlag::FLAG_PHRASE as i16 | FeatureFlag::FLAG_BOOLEAN as i16 | FeatureFlag::FLAG_LOVEHATE as i16,
+    FlagDefault = FeatureFlag::FlagPhrase as i16 | FeatureFlag::FlagBoolean as i16 | FeatureFlag::FlagLovehate as i16,
 }
 
-use cxx::CxxString;
+//use cxx::CxxString;
 
 #[cxx::bridge(namespace = org::example)]
 pub(crate) mod ffi {
@@ -245,7 +245,7 @@ pub(crate) mod ffi {
         pub(crate) fn new_stem(lang: &str, err: &mut i8) -> UniquePtr<Stem>;
 
         pub(crate) type WritableDatabase;
-        pub(crate) fn new_writable_database_with_path(path: &str, action: i8, db_type: i8, err: &mut i8) -> UniquePtr<WritableDatabase>;
+        pub(crate) fn new_writable_database_with_path(path: &str, action: i8, err: &mut i8) -> UniquePtr<WritableDatabase>;
         pub(crate) fn commit(db: &mut WritableDatabase, err: &mut i8);
         pub(crate) fn replace_document(db: &mut WritableDatabase, unique_term: &str, doc: &mut Document, err: &mut i8) -> u32;
         pub(crate) fn delete_document(db: &mut WritableDatabase, unique_term: &str, err: &mut i8);
@@ -279,6 +279,8 @@ pub(crate) mod ffi {
 
         pub(crate) type Enquire;
         pub(crate) fn get_mset(en: &mut Enquire, from: i32, size: i32, err: &mut i8) -> UniquePtr<MSet>;
+        pub(crate) fn set_query(en: &mut Enquire, query: &mut Query, err: &mut i8);
+        pub(crate) fn set_sort_by_key(en: &mut Enquire, sorter: &mut MultiValueKeyMaker, reverse: bool, err: &mut i8);
 
         pub(crate) type QueryParser;
         pub(crate) fn new_query_parser(err: &mut i8) -> UniquePtr<QueryParser>;
@@ -294,6 +296,48 @@ pub(crate) mod ffi {
         pub(crate) fn add_right_query(this_q: &mut Query, op: i32, q: &mut Query, err: &mut i8) -> UniquePtr<Query>;
         pub(crate) fn new_query_double_with_prefix(prefix: &str, d: f64, err: &mut i8) -> UniquePtr<Query>;
         pub(crate) fn query_is_empty(this_q: &mut Query, err: &mut i8) -> bool;
+
+        pub(crate) type MultiValueKeyMaker;
+        pub(crate) fn new_multi_value_key_maker(err: &mut i8) -> UniquePtr<MultiValueKeyMaker>;
+        pub(crate) fn add_value_to_multi_value_key_maker(this_m: &mut MultiValueKeyMaker, slot: u32, asc_desc: bool, err: &mut i8);
+    }
+}
+
+#[warn(unused_unsafe)]
+
+pub struct MultiValueKeyMaker {
+    pub cxxp: UniquePtr<ffi::MultiValueKeyMaker>,
+}
+
+impl MultiValueKeyMaker {
+    pub fn new() -> Result<Self, i8> {
+        #[allow(unused_unsafe)]
+        unsafe {
+            let mut err = 0;
+            let obj = ffi::new_multi_value_key_maker(&mut err);
+
+            if err == 0 {
+                Ok(Self {
+                    cxxp: obj,
+                })
+            } else {
+                Err(err)
+            }
+        }
+    }
+
+    pub fn add_value(&mut self, slot: u32, asc_desc: bool) -> Result<(), i8> {
+        #[allow(unused_unsafe)]
+        unsafe {
+            let mut err = 0;
+            ffi::add_value_to_multi_value_key_maker(&mut self.cxxp, slot, asc_desc, &mut err);
+
+            if err == 0 {
+                Ok(())
+            } else {
+                Err(err)
+            }
+        }
     }
 }
 
@@ -303,6 +347,7 @@ pub struct Query {
 
 impl Query {
     pub fn new() -> Result<Self, i8> {
+        #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
             let obj = ffi::new_query(&mut err);
@@ -318,6 +363,7 @@ impl Query {
     }
 
     pub fn new_range(op: XapianOp, slot: u32, begin: f64, end: f64) -> Result<Self, i8> {
+        #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
             let obj = ffi::new_query_range(op as i32, slot as i32, begin, end, &mut err);
@@ -333,6 +379,7 @@ impl Query {
     }
 
     pub fn add_right(&mut self, op: XapianOp, q: &mut Query) -> Result<Self, i8> {
+        #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
             let obj = ffi::add_right_query(&mut self.cxxp, op as i32, &mut q.cxxp, &mut err);
@@ -348,6 +395,7 @@ impl Query {
     }
 
     pub fn new_double_with_prefix(prefix: &str, d: f64) -> Result<Self, i8> {
+        #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
             let obj = ffi::new_query_double_with_prefix(prefix, d, &mut err);
@@ -363,6 +411,7 @@ impl Query {
     }
 
     pub fn is_empty(&mut self) -> bool {
+        #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
             let res = ffi::query_is_empty(&mut self.cxxp, &mut err);
@@ -469,6 +518,7 @@ pub struct MSetIterator<'a> {
 
 impl<'a> MSetIterator<'a> {
     pub fn is_next(&mut self) -> Result<bool, i8> {
+        #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
             let res = ffi::mset_size(&mut self.mset.cxxp, &mut err) > self.index;
@@ -482,6 +532,7 @@ impl<'a> MSetIterator<'a> {
     }
 
     pub fn next(&mut self) -> Result<(), i8> {
+        #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
             if ffi::mset_size(&mut self.mset.cxxp, &mut err) > self.index {
@@ -496,10 +547,11 @@ impl<'a> MSetIterator<'a> {
         }
     }
 
-    pub fn get_document_data(&mut self, index: i32) -> Result<String, i8> {
+    pub fn get_document_data(&mut self) -> Result<String, i8> {
+        #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
-            let mut doc = ffi::get_doc_by_index(&mut self.mset.cxxp, index, &mut err);
+            let mut doc = ffi::get_doc_by_index(&mut self.mset.cxxp, self.index, &mut err);
 
             if err == 0 {
                 Ok(ffi::get_doc_data(&mut doc).to_string())
@@ -523,6 +575,7 @@ impl MSet {
     }
 
     pub fn get_matches_estimated(&mut self) -> Result<i32, i8> {
+        #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
             let res = ffi::get_matches_estimated(&mut self.cxxp, &mut err);
@@ -542,6 +595,7 @@ pub struct Enquire {
 
 impl Enquire {
     pub fn get_mset(&mut self, from: i32, size: i32) -> Result<MSet, i8> {
+        #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
             let obj = ffi::get_mset(&mut self.cxxp, from, size, &mut err);
@@ -550,6 +604,34 @@ impl Enquire {
                 Ok(MSet {
                     cxxp: obj,
                 })
+            } else {
+                Err(err)
+            }
+        }
+    }
+
+    pub fn set_query(&mut self, query: &mut Query) -> Result<(), i8> {
+        #[allow(unused_unsafe)]
+        unsafe {
+            let mut err = 0;
+            ffi::set_query(&mut self.cxxp, &mut query.cxxp, &mut err);
+
+            if err == 0 {
+                Ok(())
+            } else {
+                Err(err)
+            }
+        }
+    }
+
+    pub fn set_sort_by_key(&mut self, sorter: &mut MultiValueKeyMaker, reverse: bool) -> Result<(), i8> {
+        #[allow(unused_unsafe)]
+        unsafe {
+            let mut err = 0;
+            ffi::set_sort_by_key(&mut self.cxxp, &mut sorter.cxxp, reverse, &mut err);
+
+            if err == 0 {
+                Ok(())
             } else {
                 Err(err)
             }
@@ -585,6 +667,21 @@ impl Database {
 
             if err == 0 {
                 Ok(Self {
+                    cxxp: obj,
+                })
+            } else {
+                Err(err)
+            }
+        }
+    }
+
+    pub fn new_enquire(&mut self) -> Result<Enquire, i8> {
+        unsafe {
+            let mut err = 0;
+            let obj = ffi::new_enquire(&mut self.cxxp, &mut err);
+
+            if err == 0 {
+                Ok(Enquire {
                     cxxp: obj,
                 })
             } else {
@@ -639,10 +736,10 @@ pub struct WritableDatabase {
 
 #[allow(unused_unsafe)]
 impl WritableDatabase {
-    pub fn new(path: &str, action: i8, db_type: i8) -> Result<Self, i8> {
+    pub fn new(path: &str, action: i8) -> Result<Self, i8> {
         unsafe {
             let mut err = 0;
-            let obj = ffi::new_writable_database_with_path(path, action, db_type, &mut err);
+            let obj = ffi::new_writable_database_with_path(path, action, &mut err);
 
             if err == 0 {
                 Ok(Self {
