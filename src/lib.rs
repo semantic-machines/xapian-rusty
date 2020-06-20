@@ -3,6 +3,7 @@ use cxx::UniquePtr;
 pub const BRASS: i8 = 1;
 pub const CHERT: i8 = 2;
 pub const IN_MEMORY: i8 = 3;
+pub const UNKNOWN: i8 = 0;
 
 /** Open for read/write; create if no db exists. */
 pub const DB_CREATE_OR_OPEN: i8 = 1;
@@ -296,6 +297,7 @@ pub(crate) mod ffi {
         pub(crate) fn add_right_query(this_q: &mut Query, op: i32, q: &mut Query, err: &mut i8) -> UniquePtr<Query>;
         pub(crate) fn new_query_double_with_prefix(prefix: &str, d: f64, err: &mut i8) -> UniquePtr<Query>;
         pub(crate) fn query_is_empty(this_q: &mut Query, err: &mut i8) -> bool;
+        pub(crate) fn get_description(this_q: &mut Query) -> &CxxString;
 
         pub(crate) type MultiValueKeyMaker;
         pub(crate) fn new_multi_value_key_maker(err: &mut i8) -> UniquePtr<MultiValueKeyMaker>;
@@ -420,6 +422,19 @@ impl Query {
             } else {
                 true
             }
+        }
+    }
+
+    pub fn get_description (&mut self) -> String {
+        #[allow(unused_unsafe)]
+            unsafe {
+            //let mut err = 0;
+            let res = ffi::get_description(&mut self.cxxp);
+            //if err == 0 {
+                res.to_string().clone()
+            //} else {
+            //    None
+            //}
         }
     }
 }
@@ -554,7 +569,7 @@ impl<'a> MSetIterator<'a> {
             let mut doc = ffi::get_doc_by_index(&mut self.mset.cxxp, self.index, &mut err);
 
             if err == 0 {
-                Ok(ffi::get_doc_data(&mut doc).to_string())
+                Ok(ffi::get_doc_data(&mut doc).to_string().clone())
             } else {
                 Err(err)
             }

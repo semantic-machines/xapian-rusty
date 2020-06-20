@@ -61,6 +61,7 @@ std::unique_ptr<Query> new_query_range(int32_t op, int32_t slot, double begin, d
 std::unique_ptr<Query> new_query_double_with_prefix(rust::Str prefix, double _d, int8_t &err);
 std::unique_ptr<Query> add_right_query(Query &this_q, int32_t _op, Query &q, int8_t &err);
 bool query_is_empty (Query &q, int8_t &err);
+const std::string &get_description (Query &q);
 
 //
 std::unique_ptr<MSet> get_mset(Enquire &en, int32_t from, int32_t size, int8_t &err);

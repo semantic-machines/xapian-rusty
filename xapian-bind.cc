@@ -460,6 +460,21 @@ void add_boolean_term(Document &doc, rust::Str data, int8_t &err)
     }
 }
 
+std::string g_str_0;
+const std::string &get_doc_data (Document &doc) {
+    try
+    {
+        //err = 0;
+        g_str_0 = doc.get_data();
+        return g_str_0;
+    }
+    catch (Error ex)
+    {
+        //err = get_err_code(ex.get_type());
+        return NULL;
+    }
+}
+
 //////
 
 std::unique_ptr<QueryParser> new_query_parser(int8_t &err)
@@ -616,6 +631,21 @@ bool query_is_empty (Query &q, int8_t &err) {
     }
 }
 
+std::string g_str_1;
+const std::string &get_description (Query &q) {
+    try
+    {
+        //err = 0;
+        g_str_1 = q.get_description();
+        return g_str_1;
+    }
+    catch (Error ex)
+    {
+        //err = get_err_code(ex.get_type());
+        return NULL;
+    }
+}
+
 ////
 
 std::unique_ptr<MSet> get_mset(Enquire &en, int32_t from, int32_t size, int8_t &err) {
@@ -692,21 +722,6 @@ std::unique_ptr<Document> get_doc_by_index (MSet &set, int32_t index, int8_t &er
     catch (Error ex)
     {
         err = get_err_code(ex.get_type());
-        return NULL;
-    }
-}
-
-/////
-
-const std::string &get_doc_data (Document &doc) {
-    try
-    {
-        //err = 0;
-        return doc.get_data();
-    }
-    catch (Error ex)
-    {
-        //err = get_err_code(ex.get_type());
         return NULL;
     }
 }
