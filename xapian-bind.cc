@@ -570,7 +570,7 @@ std::unique_ptr<Query> new_query(int8_t &err) {
     }
 }
 
-std::unique_ptr<Query> new_query_range(int32_t _op, int32_t slot, double _begin, double _end, int8_t &err) {
+std::unique_ptr<Query> new_query_range(int32_t _op, valueno slot, double _begin, double _end, int8_t &err) {
     try
     {
         err = 0;
@@ -741,7 +741,7 @@ std::unique_ptr<MultiValueKeyMaker> new_multi_value_key_maker (int8_t &err) {
     }
 }
 
-void add_value_to_multi_value_key_maker(MultiValueKeyMaker &this_m, uint32_t slot, bool asc_desc, int8_t &err) {
+void add_value_to_multi_value_key_maker(MultiValueKeyMaker &this_m, valueno slot, bool asc_desc, int8_t &err) {
     try
     {
         err = 0;

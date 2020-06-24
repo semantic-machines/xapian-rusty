@@ -293,7 +293,7 @@ pub(crate) mod ffi {
 
         pub(crate) type Query;
         pub(crate) fn new_query(err: &mut i8) -> UniquePtr<Query>;
-        pub(crate) fn new_query_range(op: i32, slot: i32, begin: f64, end: f64, err: &mut i8) -> UniquePtr<Query>;
+        pub(crate) fn new_query_range(op: i32, slot: u32, begin: f64, end: f64, err: &mut i8) -> UniquePtr<Query>;
         pub(crate) fn add_right_query(this_q: &mut Query, op: i32, q: &mut Query, err: &mut i8) -> UniquePtr<Query>;
         pub(crate) fn new_query_double_with_prefix(prefix: &str, d: f64, err: &mut i8) -> UniquePtr<Query>;
         pub(crate) fn query_is_empty(this_q: &mut Query, err: &mut i8) -> bool;
@@ -368,7 +368,7 @@ impl Query {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
-            let obj = ffi::new_query_range(op as i32, slot as i32, begin, end, &mut err);
+            let obj = ffi::new_query_range(op as i32, slot, begin, end, &mut err);
 
             if err == 0 {
                 Ok(Self {
@@ -425,13 +425,13 @@ impl Query {
         }
     }
 
-    pub fn get_description (&mut self) -> String {
+    pub fn get_description(&mut self) -> String {
         #[allow(unused_unsafe)]
-            unsafe {
+        unsafe {
             //let mut err = 0;
             let res = ffi::get_description(&mut self.cxxp);
             //if err == 0 {
-                res.to_string().clone()
+            res.to_string().clone()
             //} else {
             //    None
             //}
@@ -606,6 +606,7 @@ impl MSet {
 
 pub struct Enquire {
     pub cxxp: UniquePtr<ffi::Enquire>,
+    sorter: Option<MultiValueKeyMaker>,
 }
 
 impl Enquire {
@@ -639,11 +640,12 @@ impl Enquire {
         }
     }
 
-    pub fn set_sort_by_key(&mut self, sorter: &mut MultiValueKeyMaker, reverse: bool) -> Result<(), i8> {
+    pub fn set_sort_by_key(&mut self, mut sorter: MultiValueKeyMaker, reverse: bool) -> Result<(), i8> {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
             ffi::set_sort_by_key(&mut self.cxxp, &mut sorter.cxxp, reverse, &mut err);
+            self.sorter = Some(sorter);
 
             if err == 0 {
                 Ok(())
@@ -698,6 +700,7 @@ impl Database {
             if err == 0 {
                 Ok(Enquire {
                     cxxp: obj,
+                    sorter: None,
                 })
             } else {
                 Err(err)

@@ -57,7 +57,7 @@ std::unique_ptr<Query> parse_query_with_prefix(QueryParser &qp, rust::Str query,
 
 //
 std::unique_ptr<Query> new_query(int8_t &err);
-std::unique_ptr<Query> new_query_range(int32_t op, int32_t slot, double begin, double end, int8_t &err);
+std::unique_ptr<Query> new_query_range(int32_t op, valueno slot, double begin, double end, int8_t &err);
 std::unique_ptr<Query> new_query_double_with_prefix(rust::Str prefix, double _d, int8_t &err);
 std::unique_ptr<Query> add_right_query(Query &this_q, int32_t _op, Query &q, int8_t &err);
 bool query_is_empty (Query &q, int8_t &err);
@@ -66,7 +66,7 @@ const std::string &get_description (Query &q);
 //
 std::unique_ptr<MSet> get_mset(Enquire &en, int32_t from, int32_t size, int8_t &err);
 void set_query(Enquire &en, Query &query, int8_t &err);
-void set_sort_by_key(Enquire &en, MultiValueKeyMaker &sorter, bool reverse, int8_t &err);
+void set_sort_by_key(Enquire &en, MultiValueKeyMaker & sorter, bool reverse, int8_t &err);
 
 //
 int get_matches_estimated (MSet &set, int8_t &err);
@@ -75,6 +75,6 @@ std::unique_ptr<Document> get_doc_by_index (MSet &set, int32_t index, int8_t &er
 
 //
 std::unique_ptr<MultiValueKeyMaker> new_multi_value_key_maker (int8_t &err);
-void add_value_to_multi_value_key_maker(MultiValueKeyMaker &this_m, uint32_t slot, bool asc_desc, int8_t &err);
+void add_value_to_multi_value_key_maker(MultiValueKeyMaker &this_m, valueno slot, bool asc_desc, int8_t &err);
 
 
