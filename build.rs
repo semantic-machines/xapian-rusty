@@ -59,7 +59,7 @@ fn target_dir() -> Result<PathBuf> {
 }
 
 fn out_dir() -> Result<PathBuf> {
-    env::var_os("OUT_DIR").map(PathBuf::from).ok_or(Error::new(ErrorKind::Other, "oh no!"))
+    env::var_os("OUT_DIR").map(PathBuf::from).ok_or_else(|| Error::new(ErrorKind::Other, "oh no!"))
 }
 
 fn canonicalize(path: impl AsRef<Path>) -> Result<PathBuf> {

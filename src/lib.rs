@@ -429,7 +429,7 @@ impl Query {
                 //let mut err = 0;
                 let res = ffi::get_description(&mut self.cxxp);
                 //if err == 0 {
-                return res.to_string().clone();
+                return res.to_string();
                 //} else {
                 //    None
                 //}
@@ -506,7 +506,7 @@ impl QueryParser {
                     cxxp: obj,
                 })
             } else {
-                return Err(err);
+                Err(err)
             }
         }
     }
@@ -520,7 +520,7 @@ impl QueryParser {
                     cxxp: obj,
                 })
             } else {
-                return Err(err);
+                Err(err)
             }
         }
     }
@@ -569,7 +569,7 @@ impl<'a> MSetIterator<'a> {
             let mut doc = ffi::get_doc_by_index(&mut self.mset.cxxp, self.index, &mut err);
 
             if err == 0 {
-                Ok(ffi::get_doc_data(&mut doc).to_string().clone())
+                Ok(ffi::get_doc_data(&mut doc).to_string())
             } else {
                 Err(err)
             }
