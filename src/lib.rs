@@ -349,19 +349,9 @@ pub struct Query {
 
 impl Query {
     pub fn new() -> Result<Self, i8> {
-        #[allow(unused_unsafe)]
-        unsafe {
-            let mut err = 0;
-            let obj = ffi::new_query(&mut err);
-
-            if err == 0 {
-                Ok(Self {
-                    cxxp: obj,
-                })
-            } else {
-                Err(err)
-            }
-        }
+        Ok(Self {
+            cxxp: UniquePtr::null(),
+        })
     }
 
     pub fn new_range(op: XapianOp, slot: u32, begin: f64, end: f64) -> Result<Self, i8> {
@@ -413,29 +403,39 @@ impl Query {
     }
 
     pub fn is_empty(&mut self) -> bool {
-        #[allow(unused_unsafe)]
-        unsafe {
-            let mut err = 0;
-            let res = ffi::query_is_empty(&mut self.cxxp, &mut err);
-            if err == 0 {
-                res
-            } else {
-                true
+        self.cxxp.is_null()
+    }
+
+    pub fn is_empty_content_query(&mut self) -> bool {
+        if !self.cxxp.is_null() {
+            #[allow(unused_unsafe)]
+            unsafe {
+                let mut err = 0;
+                let res = ffi::query_is_empty(&mut self.cxxp, &mut err);
+                if err == 0 {
+                    return res;
+                } else {
+                    return true;
+                }
             }
         }
+        true
     }
 
     pub fn get_description(&mut self) -> String {
-        #[allow(unused_unsafe)]
-        unsafe {
-            //let mut err = 0;
-            let res = ffi::get_description(&mut self.cxxp);
-            //if err == 0 {
-            res.to_string().clone()
-            //} else {
-            //    None
-            //}
+        if !self.cxxp.is_null() {
+            #[allow(unused_unsafe)]
+            unsafe {
+                //let mut err = 0;
+                let res = ffi::get_description(&mut self.cxxp);
+                //if err == 0 {
+                return res.to_string().clone();
+                //} else {
+                //    None
+                //}
+            }
         }
+        String::default()
     }
 }
 
