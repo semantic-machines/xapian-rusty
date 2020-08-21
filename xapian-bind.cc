@@ -466,13 +466,14 @@ const std::string &get_doc_data (Document &doc) {
     {
         //err = 0;
         g_str_0 = doc.get_data();
-        return g_str_0;
     }
     catch (Error ex)
     {
         //err = get_err_code(ex.get_type());
-        return NULL;
+        g_str_0 = std::string("");
     }
+
+    return g_str_0;
 }
 
 //////
