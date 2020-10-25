@@ -83,20 +83,12 @@ std::unique_ptr<Database> new_database(int8_t &err)
     }
 }
 
-std::unique_ptr<Database> new_database_with_path(rust::Str path, int8_t db_type, int8_t &err)
+std::unique_ptr<Database> new_database_with_path(rust::Str path, int8_t &err)
 {
     try
     {
         err = 0;
-
-        if (db_type == BRASS)
-            return std::make_unique<Database>(Brass::open(std::string(path)));
-        else if (db_type == CHERT)
-            return std::make_unique<Database>(Chert::open(std::string(path)));
-        else if (db_type == IN_MEMORY)
-            return std::make_unique<Database>(InMemory::open());
-        else
-            return std::make_unique<Database>(std::string(path));
+        return std::make_unique<Database>(std::string(path));
     }
     catch (Error ex)
     {
@@ -496,7 +488,7 @@ void set_max_wildcard_expansion(QueryParser &qp, int32_t limit, int8_t &err) {
     try
     {
         err = 0;
-        qp.set_max_wildcard_expansion (limit);
+        qp.set_max_expansion (limit, Query::WILDCARD_LIMIT_MOST_FREQUENT, QueryParser::FLAG_WILDCARD);
     }
     catch (Error ex)
     {

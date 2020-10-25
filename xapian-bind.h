@@ -11,7 +11,7 @@ std::unique_ptr<Database> new_database(int8_t &err);
 std::unique_ptr<Enquire> new_enquire(Database &db, int8_t &err);
 
 //
-std::unique_ptr<Database> new_database_with_path(rust::Str path, int8_t db_type, int8_t &err);
+std::unique_ptr<Database> new_database_with_path(rust::Str path, int8_t &err);
 void database_reopen (Database &db, int8_t &err);
 void add_database(Database &db, Database &add_db, int8_t &err);
 void database_close(Database &db, int8_t &err);

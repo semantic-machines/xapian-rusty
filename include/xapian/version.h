@@ -1,7 +1,7 @@
 /** @file version.h
  * @brief Define preprocessor symbols for the library version
  */
-// Copyright (C) 2002,2004,2005,2006,2007,2008,2009,2010,2015 Olly Betts
+// Copyright (C) 2002,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2015,2016,2017,2018,2020 Olly Betts
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -50,7 +50,7 @@
 #define XAPIAN_ENABLE_VISIBILITY
 
 /// The version of Xapian as a C string literal.
-#define XAPIAN_VERSION "1.2.25"
+#define XAPIAN_VERSION "1.4.17"
 
 /** The major component of the Xapian version.
  * E.g. for Xapian 1.0.14 this would be: 1
@@ -60,26 +60,70 @@
 /** The minor component of the Xapian version.
  * E.g. for Xapian 1.0.14 this would be: 0
  */
-#define XAPIAN_MINOR_VERSION 2
+#define XAPIAN_MINOR_VERSION 4
 
 /** The revision component of the Xapian version.
  * E.g. for Xapian 1.0.14 this would be: 14
  */
-#define XAPIAN_REVISION 25
+#define XAPIAN_REVISION 17
 
-/// XAPIAN_HAS_BRASS_BACKEND Defined if the brass backend is enabled.
-#define XAPIAN_HAS_BRASS_BACKEND 1
+/// Base (signed) type for Xapian::docid and related types.
+#define XAPIAN_DOCID_BASE_TYPE int
+
+/// Base (signed) type for Xapian::termcount and related types.
+#define XAPIAN_TERMCOUNT_BASE_TYPE int
+
+/// Base (signed) type for Xapian::termpos.
+#define XAPIAN_TERMPOS_BASE_TYPE int
+
+/// Type for returning total document length.
+#define XAPIAN_TOTALLENGTH_TYPE unsigned long
+
+/// Underlying type for Xapian::rev.
+#define XAPIAN_REVISION_TYPE unsigned long
 
 /// XAPIAN_HAS_CHERT_BACKEND Defined if the chert backend is enabled.
 #define XAPIAN_HAS_CHERT_BACKEND 1
 
-/// XAPIAN_HAS_FLINT_BACKEND Defined if the flint backend is enabled.
-#define XAPIAN_HAS_FLINT_BACKEND 1
+/// XAPIAN_HAS_GLASS_BACKEND Defined if the glass backend is enabled.
+#define XAPIAN_HAS_GLASS_BACKEND 1
 
 /// XAPIAN_HAS_INMEMORY_BACKEND Defined if the inmemory backend is enabled.
 #define XAPIAN_HAS_INMEMORY_BACKEND 1
 
 /// XAPIAN_HAS_REMOTE_BACKEND Defined if the remote backend is enabled.
 #define XAPIAN_HAS_REMOTE_BACKEND 1
+
+/// XAPIAN_AT_LEAST(A,B,C) checks for xapian-core >= A.B.C - use like so:
+///
+/// @code
+/// #if XAPIAN_AT_LEAST(1,4,2)
+/// /* Code needing features needing Xapian >= 1.4.2. */
+/// #endif
+/// @endcode
+///
+/// Added in Xapian 1.4.2.
+#define XAPIAN_AT_LEAST(A,B,C) \
+ (XAPIAN_MAJOR_VERSION > (A) || \
+ (XAPIAN_MAJOR_VERSION == (A) && \
+ (XAPIAN_MINOR_VERSION > (B) || \
+ (XAPIAN_MINOR_VERSION == (B) && XAPIAN_REVISION >= (C)))))
+
+/// We support move semantics when we're confident the compiler supports it.
+///
+/// C++11 move semantics are very useful in threaded code that wants to
+/// hand-off Xapian objects to worker threads, but in this case it's very
+/// unhelpful for availability of these semantics to vary by compiler as it
+/// quietly leads to a build with non-threadsafe behaviour.
+///
+/// User code can #define XAPIAN_MOVE_SEMANTICS to force this on, and will
+/// then get a compilation failure if the compiler lacks suitable support.
+#ifndef XAPIAN_MOVE_SEMANTICS
+# if __cplusplus >= 201103L || \
+ (defined _MSC_VER && _MSC_VER >= 1900) || \
+ defined XAPIAN_LIB_BUILD
+# define XAPIAN_MOVE_SEMANTICS
+# endif
+#endif
 
 #endif /* XAPIAN_INCLUDED_VERSION_H */

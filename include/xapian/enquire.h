@@ -1,9 +1,9 @@
-/** \file enquire.h
- * \brief API for running queries
+/** @file enquire.h
+ * @brief API for running queries
  */
 /* Copyright 1999,2000,2001 BrightStation PLC
  * Copyright 2001,2002 Ananova Ltd
- * Copyright 2002,2003,2004,2005,2006,2007,2008,2009,2011 Olly Betts
+ * Copyright 2002,2003,2004,2005,2006,2007,2008,2009,2011,2012,2013,2014,2015,2016 Olly Betts
  * Copyright 2009 Lemur Consulting Ltd
  * Copyright 2011 Action Without Borders
  *
@@ -26,11 +26,18 @@
 #ifndef XAPIAN_INCLUDED_ENQUIRE_H
 #define XAPIAN_INCLUDED_ENQUIRE_H
 
+#if !defined XAPIAN_IN_XAPIAN_H && !defined XAPIAN_LIB_BUILD
+# error Never use <xapian/enquire.h> directly; include <xapian.h> instead.
+#endif
+
+#include "xapian/deprecated.h"
 #include <string>
 
-#include <xapian/base.h>
-#include <xapian/deprecated.h>
-#include <xapian/keymaker.h>
+#include <xapian/attributes.h>
+#include <xapian/eset.h>
+#include <xapian/intrusive_ptr.h>
+#include <xapian/mset.h>
+#include <xapian/stem.h>
 #include <xapian/types.h>
 #include <xapian/termiterator.h>
 #include <xapian/visibility.h>
@@ -41,533 +48,10 @@ class Database;
 class Document;
 class ErrorHandler;
 class ExpandDecider;
+class KeyMaker;
 class MatchSpy;
-class MSetIterator;
 class Query;
 class Weight;
-
-/** A match set (MSet).
- *  This class represents (a portion of) the results of a query.
- */
-class XAPIAN_VISIBILITY_DEFAULT MSet {
-    public:
-	class Internal;
-	/// @private @internal Reference counted internals.
-	Xapian::Internal::RefCntPtr<Internal> internal;
-
-	/// @private @internal Constructor for internal use.
-	explicit MSet(MSet::Internal * internal_);
-
-	/// Create an empty Xapian::MSet.
-	MSet();
-
-	/// Destroy a Xapian::MSet.
-	~MSet();
-
-	/// Copying is allowed (and is cheap).
-	MSet(const MSet & other);
-
-// ---- patch ---- begin
-        Xapian::docid get_id_by_index(Xapian::doccount index);
-        Document get_doc_by_index(Xapian::doccount index);
-// ---- patch ---- end
-
-	/// Assignment is allowed (and is cheap).
-	void operator=(const MSet &other);
-
-	/** Fetch the document info for a set of items in the MSet.
-	 *
-	 *  This method causes the documents in the range specified by the
-	 *  iterators to be fetched from the database, and cached in the
-	 *  Xapian::MSet object.  This has little effect when performing a
-	 *  search across a local database, but will greatly speed up
-	 *  subsequent access to the document contents when the documents are
-	 *  stored in a remote database.
-	 *
-	 *  The iterators must be over this Xapian::MSet - undefined behaviour
-	 *  will result otherwise.
-	 *
-	 *  @param begin   MSetIterator for first item to fetch.
-	 *  @param end     MSetIterator for item after last item to fetch.
-	 */
-	void fetch(const MSetIterator &begin, const MSetIterator &end) const;
-
-	/** Fetch the single item specified.
-	 */
-	void fetch(const MSetIterator &item) const;
-
-	/** Fetch all the items in the MSet.
-	 */
-	void fetch() const;
-
-	/** This converts the weight supplied to a percentage score.
-	 *  The return value will be in the range 0 to 100, and will be 0 if
-	 *  and only if the item did not match the query at all.
-	 *
-	 *  @param wt	The weight to convert.
-	 */
-	Xapian::percent convert_to_percent(Xapian::weight wt) const;
-
-	/// Return the percentage score for a particular item.
-	Xapian::percent convert_to_percent(const MSetIterator &it) const;
-
-	/** Return the term frequency of the given query term.
-	 *
-	 *  @param tname The term to look for.
-	 *
-	 *  This is sometimes more efficient than asking the database directly
-	 *  for the term frequency - in particular, if the term was in the
-	 *  query, its frequency will usually be cached in the MSet.
-	 */
-	Xapian::doccount get_termfreq(const std::string &tname) const;
-
-	/** Return the term weight of the given query term.
-	 *
-	 *  @param tname The term to look for.
-	 *
-	 *  @exception  Xapian::InvalidArgumentError is thrown if the term was
-	 *		not in the query.
-	 */
-	Xapian::weight get_termweight(const std::string &tname) const;
-
-	/** The index of the first item in the result which was put into the
-	 *  MSet.
-	 *
-	 *  This corresponds to the parameter "first" specified in
-	 *  Xapian::Enquire::get_mset().  A value of 0 corresponds to the
-	 *  highest result being the first item in the MSet.
-	 */
-	Xapian::doccount get_firstitem() const;
-
-	/** A lower bound on the number of documents in the database which
-	 *  match the query.
-	 *
-	 *  This figure takes into account collapsing of duplicates,
-	 *  and weighting cutoff values.
-	 *
-	 *  This number is usually considerably less than the actual number
-	 *  of documents which match the query.
-	 */
-	Xapian::doccount get_matches_lower_bound() const;
-
-	/** An estimate for the number of documents in the database which
-	 *  match the query.
-	 *
-	 *  This figure takes into account collapsing of duplicates,
-	 *  and weighting cutoff values.
-	 *
-	 *  This value is returned because there is sometimes a request to
-	 *  display such information.  However, our experience is that
-	 *  presenting this value to users causes them to worry about the
-	 *  large number of results, rather than how useful those at the top
-	 *  of the result set are, and is thus undesirable.
-	 */
-	Xapian::doccount get_matches_estimated() const;
-
-	/** An upper bound on the number of documents in the database which
-	 *  match the query.
-	 *
-	 *  This figure takes into account collapsing of duplicates,
-	 *  and weighting cutoff values.
-	 *
-	 *  This number is usually considerably greater than the actual
-	 *  number of documents which match the query.
-	 */
-	Xapian::doccount get_matches_upper_bound() const;
-
-	/** A lower bound on the number of documents in the database which
-	 *  would match the query if collapsing wasn't used.
-	 */
-	Xapian::doccount get_uncollapsed_matches_lower_bound() const;
-
-	/** A estimate of the number of documents in the database which
-	 *  would match the query if collapsing wasn't used.
-	 */
-	Xapian::doccount get_uncollapsed_matches_estimated() const;
-
-	/** A upper bound on the number of documents in the database which
-	 *  would match the query if collapsing wasn't used.
-	 */
-	Xapian::doccount get_uncollapsed_matches_upper_bound() const;
-
-	/** The maximum possible weight in the MSet.
-	 *
-	 *  This weight is likely not to be attained in the set of results,
-	 *  but represents an upper bound on the weight which a document
-	 *  could attain for the given query.
-	 */
-	Xapian::weight get_max_possible() const;
-
-	/** The greatest weight which is attained by any document in the
-	 *  database.
-	 *
-	 *  If firstitem == 0 and the primary ordering is by relevance, this is
-	 *  the weight of the first entry in the MSet. 
-	 *
-	 *  If no documents are found by the query, this will be 0.
-	 *
-	 *  Note that calculation of max_attained requires calculation
-	 *  of at least one result item - therefore, if no items were
-	 *  requested when the query was performed (by specifying
-	 *  maxitems = 0 in Xapian::Enquire::get_mset()), this value will be 0.
-	 */
-	Xapian::weight get_max_attained() const;
-
-	/** The number of items in this MSet */
-	Xapian::doccount size() const;
-
-	/** Required to allow use as an STL container. */
-	Xapian::doccount max_size() const { return size(); }
-
-	/** Test if this MSet is empty */
-	bool empty() const;
-
-	/** Swap the MSet we point to with another */
-	void swap(MSet & other);
-
-	/** Iterator for the items in this MSet */
-	MSetIterator begin() const;
-
-	/** End iterator corresponding to begin() */
-	MSetIterator end() const;
-
-	/** Iterator pointing to the last element of this MSet */
-	MSetIterator back() const;
-
-	/** This returns the document at position i in this MSet object.
-	 *
-	 *  Note that this is not the same as the document at rank i in the
-	 *  query, unless the "first" parameter to Xapian::Enquire::get_mset
-	 *  was 0.  Rather, it is the document at rank i + first.
-	 *
-	 *  In other words, the offset is into the documents represented by
-	 *  this object, not into the set of documents matching the query.
-	 *
-	 *  @param i	The index into the MSet.
-	 */
-	MSetIterator operator[](Xapian::doccount i) const;
-
-	/// Allow use as an STL container
-	//@{
-	typedef MSetIterator value_type; // FIXME: not assignable...
-	typedef MSetIterator iterator;
-	typedef MSetIterator const_iterator;
-	typedef MSetIterator & reference; // Hmm
-	typedef MSetIterator & const_reference;
-	typedef MSetIterator * pointer; // Hmm
-	typedef Xapian::doccount_diff difference_type;
-	typedef Xapian::doccount size_type;
-	//@}
-
-	/// Return a string describing this object.
-	std::string get_description() const;
-};
-
-/** An iterator pointing to items in an MSet.
- *  This is used for access to individual results of a match.
- */
-class XAPIAN_VISIBILITY_DEFAULT MSetIterator {
-    private:
-	friend class MSet;
-	friend bool operator==(const MSetIterator &a, const MSetIterator &b);
-	friend bool operator!=(const MSetIterator &a, const MSetIterator &b);
-
-	MSetIterator(Xapian::doccount index_, const MSet & mset_)
-	    : index(index_), mset(mset_) { }
-
-	Xapian::doccount index;
-	MSet mset;
-
-    public:
-	/** Create an uninitialised iterator; this cannot be used, but is
-	 *  convenient syntactically.
-	 */
-	MSetIterator() : index(0), mset() { }
-
-	/// Copying is allowed (and is cheap).
-	MSetIterator(const MSetIterator &other) {
-	    index = other.index;
-	    mset = other.mset;
-	}
-
-	/// Assignment is allowed (and is cheap).
-	void operator=(const MSetIterator &other) {
-	    index = other.index;
-	    mset = other.mset;
-	}
-
-	/// Advance the iterator.
-	MSetIterator & operator++() {
-	    ++index;
-	    return *this;
-	}
-
-	/// Advance the iterator (postfix variant).
-	MSetIterator operator++(int) {
-	    MSetIterator tmp = *this;
-	    ++index;
-	    return tmp;
-	}
-
-	/// Decrement the iterator.
-	MSetIterator & operator--() {
-	    --index;
-	    return *this;
-	}
-
-	/// Decrement the iterator (postfix variant).
-	MSetIterator operator--(int) {
-	    MSetIterator tmp = *this;
-	    --index;
-	    return tmp;
-	}
-
-	/// Get the document ID for the current position.
-	Xapian::docid operator*() const;
-
-	/** Get a Xapian::Document object for the current position.
-	 *
-	 *  This method returns a Xapian::Document object which provides the
-	 *  information about the document pointed to by the MSetIterator.
-	 *
-	 *  If the underlying database has suitable support, using this call
-	 *  (rather than asking the database for a document based on its
-	 *  document ID) will enable the system to ensure that the correct
-	 *  data is returned, and that the document has not been deleted
-	 *  or changed since the query was performed.
-	 *
-	 *  @return     A Xapian::Document object containing the document data.
-	 *
-	 *  @exception Xapian::DocNotFoundError The document specified could not
-	 *	       be found in the database.
-	 */
-	Xapian::Document get_document() const;
-
-	/** Get the rank of the document at the current position.
-	 *
-	 *  The rank is the position that this document is at in the ordered
-	 *  list of results of the query.  The result is 0-based - i.e. the
-	 *  top-ranked document has a rank of 0.
-	 */
-	Xapian::doccount get_rank() const {
-	    return mset.get_firstitem() + index;
-	}
-
-	/// Get the weight of the document at the current position
-	Xapian::weight get_weight() const;
-
-	/** Get the collapse key for this document.
-	 */
-	std::string get_collapse_key() const;
-
-	/** Get an estimate of the number of documents that have been collapsed
-	 *  into this one.
-	 *
-	 *  The estimate will always be less than or equal to the actual
-	 *  number of other documents satisfying the match criteria with the
-	 *  same collapse key as this document.
-	 *
-	 *  This method may return 0 even though there are other documents with
-	 *  the same collapse key which satisfying the match criteria.  However
-	 *  if this method returns non-zero, there definitely are other such
-	 *  documents.  So this method may be used to inform the user that
-	 *  there are "at least N other matches in this group", or to control
-	 *  whether to offer a "show other documents in this group" feature
-	 *  (but note that it may not offer it in every case where it would
-	 *  show other documents).
-	 */
-	Xapian::doccount get_collapse_count() const;
-
-	/** This returns the weight of the document as a percentage score.
-	 *
-	 *  The return value will be an integer in the range 0 to 100:  0
-	 *  meaning that the item did not match the query at all.
-	 *
-	 *  The intention is that the highest weighted document will get 100
-	 *  if it matches all the weight-contributing terms in the query.
-	 *  However, currently it may get a lower percentage score if you
-	 *  use a MatchDecider and the sorting is primarily by value.
-	 *  In this case, the percentage for a particular document may vary
-	 *  depending on the first, max_size, and checkatleast parameters
-	 *  passed to Enquire::get_mset() (this bug is hard to fix without
-	 *  having to apply the MatchDecider to potentially many more
-	 *  documents, which is potentially costly).
-	 */
-	Xapian::percent get_percent() const;
-
-	/// Return a string describing this object.
-	std::string get_description() const;
-
-	/// Allow use as an STL iterator
-	//@{
-	typedef std::bidirectional_iterator_tag iterator_category; // FIXME: could enhance to be a randomaccess_iterator
-	typedef Xapian::docid value_type;
-	typedef Xapian::doccount_diff difference_type;
-	typedef Xapian::docid * pointer;
-	typedef Xapian::docid & reference;
-	//@}
-};
-
-/// Equality test for MSetIterator objects.
-inline bool operator==(const MSetIterator &a, const MSetIterator &b)
-{
-    return (a.index == b.index);
-}
-
-/// Inequality test for MSetIterator objects.
-inline bool operator!=(const MSetIterator &a, const MSetIterator &b)
-{
-    return (a.index != b.index);
-}
-
-class ESetIterator;
-
-/** Class representing an ordered set of expand terms (an ESet).
- *  This set represents the results of an expand operation, which is
- *  performed by Xapian::Enquire::get_eset().
- */
-class XAPIAN_VISIBILITY_DEFAULT ESet {
-    public:
-	class Internal;
-	/// @private @internal Reference counted internals.
-	Xapian::Internal::RefCntPtr<Internal> internal;
-
-	/// Construct an empty ESet
-	ESet();
-
-	/// Destructor.
-	~ESet();
-
-	/// Copying is allowed (and is cheap).
-	ESet(const ESet & other);
-
-	/// Assignment is allowed (and is cheap).
-	void operator=(const ESet &other);
-
-	/** A lower bound on the number of terms which are in the full
-	 *  set of results of the expand.  This will be greater than or
-	 *  equal to size()
-	 */
-	Xapian::termcount get_ebound() const;
-
-	/** The number of terms in this E-Set */
-	Xapian::termcount size() const;
-
-	/** Required to allow use as an STL container. */
-	Xapian::termcount max_size() const { return size(); }
-
-	/** Test if this E-Set is empty */
-	bool empty() const;
-
-	/** Swap the E-Set we point to with another */
-	void swap(ESet & other);
-
-	/** Iterator for the terms in this E-Set */
-	ESetIterator begin() const;
-
-	/** End iterator corresponding to begin() */
-	ESetIterator end() const;
-
-	/** Iterator pointing to the last element of this E-Set */
-	ESetIterator back() const;
-
-	/** This returns the term at position i in this E-Set.
-	 *
-	 *  @param i	The index into the ESet.
-	 */
-	ESetIterator operator[](Xapian::termcount i) const;
-
-	/// Return a string describing this object.
-	std::string get_description() const;
-};
-
-/** Iterate through terms in the ESet */
-class XAPIAN_VISIBILITY_DEFAULT ESetIterator {
-    private:
-	friend class ESet;
-	friend bool operator==(const ESetIterator &a, const ESetIterator &b);
-	friend bool operator!=(const ESetIterator &a, const ESetIterator &b);
-
-	ESetIterator(Xapian::termcount index_, const ESet & eset_)
-	    : index(index_), eset(eset_) { }
-
-	Xapian::termcount index;
-	ESet eset;
-
-    public:
-	/** Create an uninitialised iterator; this cannot be used, but is
-	 *  convenient syntactically.
-	 */
-	ESetIterator() : index(0), eset() { }
-
-	/// Copying is allowed (and is cheap).
-	ESetIterator(const ESetIterator &other) {
-	    index = other.index;
-	    eset = other.eset;
-	}
-
-	/// Assignment is allowed (and is cheap).
-	void operator=(const ESetIterator &other) {
-	    index = other.index;
-	    eset = other.eset;
-	}
-
-	/// Advance the iterator.
-	ESetIterator & operator++() {
-	    ++index;
-	    return *this;
-	}
-
-	/// Advance the iterator (postfix variant).
-	ESetIterator operator++(int) {
-	    ESetIterator tmp = *this;
-	    ++index;
-	    return tmp;
-	}
-
-	/// Decrement the iterator.
-	ESetIterator & operator--() {
-	    --index;
-	    return *this;
-	}
-
-	/// Decrement the iterator (postfix variant).
-	ESetIterator operator--(int) {
-	    ESetIterator tmp = *this;
-	    --index;
-	    return tmp;
-	}
-
-	/// Get the term for the current position
-	const std::string & operator *() const;
-
-	/// Get the weight of the term at the current position
-	Xapian::weight get_weight() const;
-
-	/// Return a string describing this object.
-	std::string get_description() const;
-
-	/// Allow use as an STL iterator
-	//@{
-	typedef std::bidirectional_iterator_tag iterator_category; // FIXME: go for randomaccess_iterator!
-	typedef std::string value_type;
-	typedef Xapian::termcount_diff difference_type;
-	typedef std::string * pointer;
-	typedef std::string & reference;
-	//@}
-};
-
-/// Equality test for ESetIterator objects.
-inline bool operator==(const ESetIterator &a, const ESetIterator &b)
-{
-    return (a.index == b.index);
-}
-
-/// Inequality test for ESetIterator objects.
-inline bool operator!=(const ESetIterator &a, const ESetIterator &b)
-{
-    return (a.index != b.index);
-}
 
 /** A relevance set (R-Set).
  *  This is the set of documents which are marked as relevant, for use
@@ -579,13 +63,21 @@ class XAPIAN_VISIBILITY_DEFAULT RSet {
 	class Internal;
 
 	/// @private @internal Reference counted internals.
-	Xapian::Internal::RefCntPtr<Internal> internal;
+	Xapian::Internal::intrusive_ptr<Internal> internal;
 
 	/// Copy constructor
 	RSet(const RSet &rset);
 
 	/// Assignment operator
 	void operator=(const RSet &rset);
+
+#ifdef XAPIAN_MOVE_SEMANTICS
+	/// Move constructor.
+	RSet(RSet && o);
+
+	/// Move assignment operator.
+	RSet & operator=(RSet && o);
+#endif
 
 	/// Default constructor
 	RSet();
@@ -624,7 +116,16 @@ class XAPIAN_VISIBILITY_DEFAULT RSet {
 /** Base class for matcher decision functor.
  */
 class XAPIAN_VISIBILITY_DEFAULT MatchDecider {
+	/// Don't allow assignment.
+	void operator=(const MatchDecider &);
+
+	/// Don't allow copying.
+	MatchDecider(const MatchDecider &);
+
     public:
+	/// Default constructor
+	MatchDecider() { }
+
 	/** Decide whether we want this document to be in the MSet.
 	 *
 	 *  @param doc	The document to test.
@@ -656,9 +157,17 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	/// Assignment is allowed (and is cheap).
 	void operator=(const Enquire & other);
 
+#ifdef XAPIAN_MOVE_SEMANTICS
+	/// Move constructor.
+	Enquire(Enquire&& o);
+
+	/// Move assignment operator.
+	Enquire& operator=(Enquire&& o);
+#endif
+
 	class Internal;
 	/// @private @internal Reference counted internals.
-	Xapian::Internal::RefCntPtr<Internal> internal;
+	Xapian::Internal::intrusive_ptr<Internal> internal;
 
 	/** Create a Xapian::Enquire object.
 	 *
@@ -668,23 +177,39 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	 *
 	 *  The database supplied must have been initialised (ie, must not be
 	 *  the result of calling the Database::Database() constructor).  If
-	 *  you need to handle a situation where you have no index gracefully,
-	 *  a database created with InMemory::open() can be passed here,
-	 *  which represents a completely empty database.
+	 *  you need to handle a situation where you have no databases
+	 *  gracefully, a database created with DB_BACKEND_INMEMORY can be
+	 *  passed here to provide a completely empty database.
 	 *
 	 *  @param database Specification of the database or databases to
 	 *	   use.
-	 *  @param errorhandler_  A pointer to the error handler to use.
-	 *	   Ownership of the object pointed to is not assumed by the
-	 *	   Xapian::Enquire object - the user should delete the
-	 *	   Xapian::ErrorHandler object after the Xapian::Enquire object
-	 *	   is deleted.  To use no error handler, this parameter
-	 *	   should be 0.
 	 *
 	 *  @exception Xapian::InvalidArgumentError will be thrown if an
 	 *  empty Database object is supplied.
 	 */
-	explicit Enquire(const Database &database, ErrorHandler * errorhandler_ = 0);
+	explicit Enquire(const Database &database);
+
+	/** Create a Xapian::Enquire object.
+	 *
+	 *  This specification cannot be changed once the Xapian::Enquire is
+	 *  opened: you must create a new Xapian::Enquire object to access a
+	 *  different database, or set of databases.
+	 *
+	 *  The database supplied must have been initialised (ie, must not be
+	 *  the result of calling the Database::Database() constructor).  If
+	 *  you need to handle a situation where you have no databases
+	 *  gracefully, a database created with DB_BACKEND_INMEMORY can be
+	 *  passed here to provide a completely empty database.
+	 *
+	 *  @param database Specification of the database or databases to
+	 *	   use.
+	 *  @param errorhandler_  This parameter is deprecated (since Xapian
+	 *	   1.3.1), and as of 1.3.5 it's ignored completely.
+	 *
+	 *  @exception Xapian::InvalidArgumentError will be thrown if an
+	 *  empty Database object is supplied.
+	 */
+	XAPIAN_DEPRECATED_EX(Enquire(const Database &database, ErrorHandler * errorhandler_));
 
 	/** Close the Xapian::Enquire object.
 	 */
@@ -739,6 +264,23 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	 */
 	void set_weighting_scheme(const Weight &weight_);
 
+	/** Set the weighting scheme to use for expansion.
+	 *
+	 *  If you don't call this method, the default is as if you'd used:
+	 *
+	 *  get_expansion_scheme("trad");
+	 *
+	 *  @param eweightname_  A string in lowercase specifying the name of
+	 *                       the scheme to be used. The following schemes
+	 *                       are currently available:
+	 *                       "bo1" : The Bo1 scheme for query expansion.
+	 *                       "trad" : The TradWeight scheme for query expansion.
+	 *  @param expand_k_ The parameter required for TradWeight query expansion.
+	 *                   A default value of 1.0 is used if none is specified.
+	 */
+	void set_expansion_scheme(const std::string &eweightname_,
+				  double expand_k_ = 1.0) const;
+
 	/** Set the collapse key to use for queries.
 	 *
 	 *  @param collapse_key  value number to collapse on - at most one MSet
@@ -773,21 +315,28 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	void set_collapse_key(Xapian::valueno collapse_key,
 			      Xapian::doccount collapse_max = 1);
 
+	/** Ordering of docids.
+	 *
+	 *  Parameter to Enquire::set_docid_order().
+	 */
 	typedef enum {
+	    /** docids sort in ascending order (default) */
 	    ASCENDING = 1,
+	    /** docids sort in descending order. */
 	    DESCENDING = 0,
+	    /** docids sort in whatever order is most efficient for the
+	     *  backend. */
 	    DONT_CARE = 2
 	} docid_order;
 
-	/** Set the direction in which documents are ordered by document id
-	 *  in the returned MSet.
+	/** Set sort order for document IDs.
 	 *
 	 *  This order only has an effect on documents which would otherwise
-	 *  have equal rank.  For a weighted probabilistic match with no sort
-	 *  value, this means documents with equal weight.  For a boolean match,
-	 *  with no sort value, this means all documents.  And if a sort value
-	 *  is used, this means documents with equal sort value (and also equal
-	 *  weight if ordering on relevance after the sort).
+	 *  have equal rank.  When ordering by relevance without a sort key,
+	 *  this means documents with equal weight.  For a boolean match
+	 *  with no sort key, this means all documents.  And if a sort key
+	 *  is used, this means documents with the same sort key (and also equal
+	 *  weight if ordering on relevance before or after the sort key).
 	 *
 	 * @param order  This can be:
 	 * - Xapian::Enquire::ASCENDING
@@ -824,12 +373,12 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	 *	specified weighting scheme.
 	 *	(default 0 => no weight cut-off).
 	 */
-	void set_cutoff(Xapian::percent percent_cutoff, Xapian::weight weight_cutoff = 0);
+	void set_cutoff(int percent_cutoff, double weight_cutoff = 0);
 
 	/** Set the sorting to be by relevance only.
 	 *
 	 *  This is the default.
-         */
+	 */
 	void set_sort_by_relevance();
 
 	/** Set the sorting to be by value only.
@@ -844,20 +393,16 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	 * @param sort_key  value number to sort on.
 	 *
 	 * @param reverse   If true, reverses the sort order.
-         */
+	 */
 	void set_sort_by_value(Xapian::valueno sort_key, bool reverse);
-
-	XAPIAN_DEPRECATED(void set_sort_by_value(Xapian::valueno sort_key));
 
 	/** Set the sorting to be by key generated from values only.
 	 *
 	 * @param sorter    The functor to use for generating keys.
 	 *
 	 * @param reverse   If true, reverses the sort order.
-         */
+	 */
 	void set_sort_by_key(Xapian::KeyMaker * sorter, bool reverse);
-
-	XAPIAN_DEPRECATED(void set_sort_by_key(Xapian::KeyMaker * sorter));
 
 	/** Set the sorting to be by value, then by relevance for documents
 	 *  with the same value.
@@ -876,8 +421,6 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	void set_sort_by_value_then_relevance(Xapian::valueno sort_key,
 					      bool reverse);
 
-	XAPIAN_DEPRECATED(void set_sort_by_value_then_relevance(Xapian::valueno sort_key));
-
 	/** Set the sorting to be by keys generated from values, then by
 	 *  relevance for documents with identical keys.
 	 *
@@ -887,8 +430,6 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	 */
 	void set_sort_by_key_then_relevance(Xapian::KeyMaker * sorter,
 					    bool reverse);
-
-	XAPIAN_DEPRECATED(void set_sort_by_key_then_relevance(Xapian::KeyMaker * sorter));
 
 	/** Set the sorting to be by relevance then value.
 	 *
@@ -919,8 +460,6 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	void set_sort_by_relevance_then_value(Xapian::valueno sort_key,
 					      bool reverse);
 
-	XAPIAN_DEPRECATED(void set_sort_by_relevance_then_value(Xapian::valueno sort_key));
-
 	/** Set the sorting to be by relevance, then by keys generated from
 	 *  values.
 	 *
@@ -944,7 +483,24 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	void set_sort_by_relevance_then_key(Xapian::KeyMaker * sorter,
 					    bool reverse);
 
-	XAPIAN_DEPRECATED(void set_sort_by_relevance_then_key(Xapian::KeyMaker * sorter));
+	/** Set a time limit for the match.
+	 *
+	 *  Matches with check_at_least set high can take a long time in some
+	 *  cases.  You can set a time limit on this, after which check_at_least
+	 *  will be turned off.
+	 *
+	 *  @param time_limit  time in seconds after which to disable
+	 *		       check_at_least (default: 0.0 which means no
+	 *		       time limit)
+	 *
+	 *  Limitations:
+	 *
+	 *  This feature is currently supported on platforms which support POSIX
+	 *  interval timers.  Interaction with the remote backend when using
+	 *  multiple databases may have bugs.  There's not currently a way to
+	 *  force the match to end after a certain time.
+	 */
+	void set_time_limit(double time_limit);
 
 	/** Get (a portion of) the match set for the current query.
 	 *
@@ -976,44 +532,72 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	 *  @param omrset    the relevance set to use when performing the query.
 	 *  @param mdecider  a decision functor to use to decide whether a
 	 *		     given document should be put in the MSet.
-	 *  @param matchspy  a decision functor to use to decide whether a
-	 *		     given document should be put in the MSet.  The
-	 *		     matchspy is applied to every document which is
-	 *		     a potential candidate for the MSet, so if there are
-	 *		     checkatleast or more such documents, the matchspy
-	 *		     will see at least checkatleast.  The mdecider is
-	 *		     assumed to be a relatively expensive test so may
-	 *		     be applied in a lazier fashion.
 	 *
-	 *  @deprecated      The matchspy parameter is deprecated - use the
-	 *		     newer MatchSpy class and add_matchspy() method
-	 *		     instead.
-	 *
-	 * @return	     A Xapian::MSet object containing the results of the
+	 *  @return	     A Xapian::MSet object containing the results of the
 	 *		     query.
 	 *
 	 *  @exception Xapian::InvalidArgumentError  See class documentation.
-	 *
-	 *  @{
 	 */
-	XAPIAN_DEPRECATED(
-	MSet get_mset(Xapian::doccount first, Xapian::doccount maxitems,
-		      Xapian::doccount checkatleast,
-		      const RSet * omrset,
-		      const MatchDecider * mdecider,
-		      const MatchDecider * matchspy) const);
 	MSet get_mset(Xapian::doccount first, Xapian::doccount maxitems,
 		      Xapian::doccount checkatleast = 0,
 		      const RSet * omrset = 0,
 		      const MatchDecider * mdecider = 0) const;
+
+	/** Get (a portion of) the match set for the current query.
+	 *
+	 *  @param first     the first item in the result set to return.
+	 *		     A value of zero corresponds to the first item
+	 *		     returned being that with the highest score.
+	 *		     A value of 10 corresponds to the first 10 items
+	 *		     being ignored, and the returned items starting
+	 *		     at the eleventh.
+	 *  @param maxitems  the maximum number of items to return.  If you
+	 *		     want all matches, then you can pass the result
+	 *		     of calling get_doccount() on the Database object
+	 *		     (though if you are doing this so you can filter
+	 *		     results, you are likely to get much better
+	 *		     performance by using Xapian's match-time filtering
+	 *		     features instead).  You can pass 0 for maxitems
+	 *		     which will give you an empty MSet with valid
+	 *		     statistics (such as get_matches_estimated())
+	 *		     calculated without looking at any postings, which
+	 *		     is very quick, but means the estimates may be
+	 *		     more approximate and the bounds may be much
+	 *		     looser.
+	 *  @param omrset    the relevance set to use when performing the query.
+	 *  @param mdecider  a decision functor to use to decide whether a
+	 *		     given document should be put in the MSet.
+	 *
+	 *  @return	     A Xapian::MSet object containing the results of the
+	 *		     query.
+	 *
+	 *  @exception Xapian::InvalidArgumentError  See class documentation.
+	 */
 	MSet get_mset(Xapian::doccount first, Xapian::doccount maxitems,
 		      const RSet * omrset,
 		      const MatchDecider * mdecider = 0) const {
 	    return get_mset(first, maxitems, 0, omrset, mdecider);
 	}
-	/** @} */
 
+	/** Terms in the query may be returned by get_eset().
+	 *
+	 *  The original intended use for Enquire::get_eset() is for query
+	 *  expansion - suggesting terms to add to the query, generally with
+	 *  the aim of improving recall (i.e. finding more of the relevant
+	 *  documents), so by default terms already in the query won't be
+	 *  returned in the ESet.  For some uses you might want to consider
+	 *  all terms, and this flag allows you to specify that.
+	 */
 	static const int INCLUDE_QUERY_TERMS = 1;
+
+	/** Calculate exact term frequencies in get_eset().
+	 *
+	 *  By default, when working over multiple databases,
+	 *  Enquire::get_eset() uses an approximation to the termfreq to
+	 *  improve efficiency.  This should still return good results, but
+	 *  if you want to calculate the exact combined termfreq then you
+	 *  can use this flag.
+	 */
 	static const int USE_EXACT_TERMFREQ = 2;
 
 	/** Get the expand set for the given rset.
@@ -1028,10 +612,9 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	 *			dbs, calculate the exact termfreq; otherwise an
 	 *			approximation is used which can greatly improve
 	 *			efficiency, but still returns good results.
-	 *  @param k	     the parameter k in the query expansion algorithm
-	 *		     (default is 1.0)
 	 *  @param edecider  a decision functor to use to decide whether a
 	 *		     given term should be put in the ESet
+	 *  @param min_wt    the minimum weight for included terms
 	 *
 	 *  @return	     An ESet object containing the results of the
 	 *		     expand.
@@ -1039,10 +622,10 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	 *  @exception Xapian::InvalidArgumentError  See class documentation.
 	 */
 	ESet get_eset(Xapian::termcount maxitems,
-			const RSet & omrset,
-			int flags = 0,
-			double k = 1.0,
-			const Xapian::ExpandDecider * edecider = 0) const;
+		      const RSet & omrset,
+		      int flags = 0,
+		      const Xapian::ExpandDecider * edecider = 0,
+		      double min_wt = 0.0) const;
 
 	/** Get the expand set for the given rset.
 	 *
@@ -1057,15 +640,15 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	 *
 	 *  @exception Xapian::InvalidArgumentError  See class documentation.
 	 */
-	inline ESet get_eset(Xapian::termcount maxitems, const RSet & omrset,
-			       const Xapian::ExpandDecider * edecider) const {
-	    return get_eset(maxitems, omrset, 0, 1.0, edecider);
+	ESet get_eset(Xapian::termcount maxitems, const RSet & omrset,
+			     const Xapian::ExpandDecider * edecider) const {
+	    return get_eset(maxitems, omrset, 0, edecider);
 	}
 
 	/** Get the expand set for the given rset.
 	 *
 	 *  @param maxitems  the maximum number of items to return.
-	 *  @param omrset    the relevance set to use when performing
+	 *  @param rset      the relevance set to use when performing
 	 *		     the expand operation.
 	 *  @param flags     zero or more of these values |-ed together:
 	 *		      - Xapian::Enquire::INCLUDE_QUERY_TERMS query
@@ -1086,12 +669,15 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	 *
 	 *  @exception Xapian::InvalidArgumentError  See class documentation.
 	 */
-	ESet get_eset(Xapian::termcount maxitems,
-			const RSet & omrset,
-			int flags,
-			double k,
-			const Xapian::ExpandDecider * edecider,
-			Xapian::weight min_wt) const;
+	XAPIAN_DEPRECATED(ESet get_eset(Xapian::termcount maxitems,
+			  const RSet & rset,
+			  int flags,
+			  double k,
+			  const Xapian::ExpandDecider * edecider = NULL,
+			  double min_wt = 0.0) const) {
+	    set_expansion_scheme("trad", k);
+	    return get_eset(maxitems, rset, flags, edecider, min_wt);
+	}
 
 	/** Get terms which match a given document, by document id.
 	 *
@@ -1124,7 +710,7 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	TermIterator get_matching_terms_begin(Xapian::docid did) const;
 
 	/** End iterator corresponding to get_matching_terms_begin() */
-	TermIterator get_matching_terms_end(Xapian::docid /*did*/) const {
+	TermIterator XAPIAN_NOTHROW(get_matching_terms_end(Xapian::docid /*did*/) const) {
 	    return TermIterator();
 	}
 
@@ -1153,51 +739,13 @@ class XAPIAN_VISIBILITY_DEFAULT Enquire {
 	TermIterator get_matching_terms_begin(const MSetIterator &it) const;
 
 	/** End iterator corresponding to get_matching_terms_begin() */
-	TermIterator get_matching_terms_end(const MSetIterator &/*it*/) const {
+	TermIterator XAPIAN_NOTHROW(get_matching_terms_end(const MSetIterator &/*it*/) const) {
 	    return TermIterator();
 	}
 
 	/// Return a string describing this object.
 	std::string get_description() const;
 };
-
-// Deprecated forms:
-
-inline void
-Enquire::set_sort_by_value(Xapian::valueno sort_key)
-{
-    return set_sort_by_value(sort_key, true);
-}
-
-inline void
-Enquire::set_sort_by_key(Xapian::KeyMaker * sorter)
-{
-    return set_sort_by_key(sorter, true);
-}
-
-inline void
-Enquire::set_sort_by_value_then_relevance(Xapian::valueno sort_key)
-{
-    return set_sort_by_value_then_relevance(sort_key, true);
-}
-
-inline void
-Enquire::set_sort_by_key_then_relevance(Xapian::KeyMaker * sorter)
-{
-    return set_sort_by_key_then_relevance(sorter, true);
-}
-
-inline void
-Enquire::set_sort_by_relevance_then_value(Xapian::valueno sort_key)
-{
-    return set_sort_by_relevance_then_value(sort_key, true);
-}
-
-inline void
-Enquire::set_sort_by_relevance_then_key(Xapian::KeyMaker * sorter)
-{
-    return set_sort_by_relevance_then_key(sorter, true);
-}
 
 }
 

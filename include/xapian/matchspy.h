@@ -1,7 +1,7 @@
 /** @file matchspy.h
  * @brief MatchSpy implementation.
  */
-/* Copyright (C) 2007,2008,2009,2010,2012,2015 Olly Betts
+/* Copyright (C) 2007,2008,2009,2010,2011,2012,2013,2014,2015 Olly Betts
  * Copyright (C) 2007,2009 Lemur Consulting Ltd
  * Copyright (C) 2010 Richard Boulton
  *
@@ -23,16 +23,17 @@
 #ifndef XAPIAN_INCLUDED_MATCHSPY_H
 #define XAPIAN_INCLUDED_MATCHSPY_H
 
-#include <xapian/base.h>
-#include <xapian/enquire.h>
+#if !defined XAPIAN_IN_XAPIAN_H && !defined XAPIAN_LIB_BUILD
+# error Never use <xapian/matchspy.h> directly; include <xapian.h> instead.
+#endif
+
+#include <xapian/attributes.h>
+#include <xapian/intrusive_ptr.h>
 #include <xapian/termiterator.h>
 #include <xapian/visibility.h>
 
 #include <string>
 #include <map>
-#include <set>
-#include <string>
-#include <vector>
 
 namespace Xapian {
 
@@ -45,7 +46,8 @@ class Registry;
  *  to calculate aggregate functions, or other profiles of the matching
  *  documents.
  */
-class XAPIAN_VISIBILITY_DEFAULT MatchSpy {
+class XAPIAN_VISIBILITY_DEFAULT MatchSpy
+    : public Xapian::Internal::opt_intrusive_base {
   private:
     /// Don't allow assignment.
     void operator=(const MatchSpy &);
@@ -53,14 +55,10 @@ class XAPIAN_VISIBILITY_DEFAULT MatchSpy {
     /// Don't allow copying.
     MatchSpy(const MatchSpy &);
 
-  protected:
-#ifdef SWIG
-  public: /* So SWIG wraps this constructor correctly for PHP */
-#endif
-    /// Default constructor, needed by subclass constructors.
-    MatchSpy() {}
-
   public:
+    /// Default constructor, needed by subclass constructors.
+    XAPIAN_NOTHROW(MatchSpy()) {}
+
     /** Virtual destructor, because we have virtual methods. */
     virtual ~MatchSpy();
 
@@ -76,7 +74,7 @@ class XAPIAN_VISIBILITY_DEFAULT MatchSpy {
      *  @param wt The weight of the document.
      */
     virtual void operator()(const Xapian::Document &doc,
-			    Xapian::weight wt) = 0;
+			    double wt) = 0;
 
     /** Clone the match spy.
      *
@@ -137,12 +135,12 @@ class XAPIAN_VISIBILITY_DEFAULT MatchSpy {
      *  method in your subclass as shown here:
      *  https://trac.xapian.org/ticket/554#comment:1
      *
-     *  @param s	A string containing the serialised results.
+     *  @param serialised	A string containing the serialised results.
      *  @param context	Registry object to use for unserialisation to permit
      *			MatchSpy subclasses with sub-MatchSpy objects to be
      *			implemented.
      */
-    virtual MatchSpy * unserialise(const std::string & s,
+    virtual MatchSpy * unserialise(const std::string & serialised,
 				   const Registry & context) const;
 
     /** Serialise the results of this match spy.
@@ -163,9 +161,9 @@ class XAPIAN_VISIBILITY_DEFAULT MatchSpy {
      *  can use the default implementation which simply throws
      *  Xapian::UnimplementedError.
      *
-     *  @param s	A string containing the serialised results.
+     *  @param serialised	A string containing the serialised results.
      */
-    virtual void merge_results(const std::string & s);
+    virtual void merge_results(const std::string & serialised);
 
     /** Return a string describing this object.
      *
@@ -175,6 +173,30 @@ class XAPIAN_VISIBILITY_DEFAULT MatchSpy {
      *  subclass).
      */
     virtual std::string get_description() const;
+
+    /** Start reference counting this object.
+     *
+     *  You can hand ownership of a dynamically allocated MatchSpy
+     *  object to Xapian by calling release() and then passing the object to a
+     *  Xapian method.  Xapian will arrange to delete the object once it is no
+     *  longer required.
+     */
+    MatchSpy * release() {
+	opt_intrusive_base::release();
+	return this;
+    }
+
+    /** Start reference counting this object.
+     *
+     *  You can hand ownership of a dynamically allocated MatchSpy
+     *  object to Xapian by calling release() and then passing the object to a
+     *  Xapian method.  Xapian will arrange to delete the object once it is no
+     *  longer required.
+     */
+    const MatchSpy * release() const {
+	opt_intrusive_base::release();
+	return this;
+    }
 };
 
 
@@ -185,8 +207,9 @@ class XAPIAN_VISIBILITY_DEFAULT ValueCountMatchSpy : public MatchSpy {
     struct Internal;
 
 #ifndef SWIG // SWIG doesn't need to know about the internal class
+    /// @private @internal
     struct XAPIAN_VISIBILITY_DEFAULT Internal
-	    : public Xapian::Internal::RefCntBase
+	    : public Xapian::Internal::intrusive_base
     {
 	/// The slot to count.
 	Xapian::valueno slot;
@@ -203,18 +226,19 @@ class XAPIAN_VISIBILITY_DEFAULT ValueCountMatchSpy : public MatchSpy {
 #endif
 
   protected:
-    Xapian::Internal::RefCntPtr<Internal> internal;
+    /** @private @internal Reference counted internals. */
+    Xapian::Internal::intrusive_ptr<Internal> internal;
 
   public:
     /// Construct an empty ValueCountMatchSpy.
-    ValueCountMatchSpy() : internal() {}
+    ValueCountMatchSpy() {}
 
     /// Construct a MatchSpy which counts the values in a particular slot.
     explicit ValueCountMatchSpy(Xapian::valueno slot_)
 	    : internal(new Internal(slot_)) {}
 
     /** Return the total number of documents tallied. */
-    size_t get_total() const {
+    size_t XAPIAN_NOTHROW(get_total() const) {
 	return internal.get() ? internal->total : 0;
     }
 
@@ -228,7 +252,7 @@ class XAPIAN_VISIBILITY_DEFAULT ValueCountMatchSpy : public MatchSpy {
     TermIterator values_begin() const;
 
     /** End iterator corresponding to values_begin() */
-    TermIterator values_end() const {
+    TermIterator XAPIAN_NOTHROW(values_end() const) {
 	return TermIterator();
     }
 
@@ -245,7 +269,7 @@ class XAPIAN_VISIBILITY_DEFAULT ValueCountMatchSpy : public MatchSpy {
     TermIterator top_values_begin(size_t maxvalues) const;
 
     /** End iterator corresponding to top_values_begin() */
-    TermIterator top_values_end(size_t) const {
+    TermIterator XAPIAN_NOTHROW(top_values_end(size_t) const) {
 	return TermIterator();
     }
 
@@ -256,15 +280,15 @@ class XAPIAN_VISIBILITY_DEFAULT ValueCountMatchSpy : public MatchSpy {
      *  @param doc	The document to tally values for.
      *  @param wt	The weight of the document (ignored by this class).
      */
-    void operator()(const Xapian::Document &doc, Xapian::weight wt);
+    void operator()(const Xapian::Document &doc, double wt);
 
     virtual MatchSpy * clone() const;
     virtual std::string name() const;
     virtual std::string serialise() const;
-    virtual MatchSpy * unserialise(const std::string & s,
+    virtual MatchSpy * unserialise(const std::string & serialised,
 				   const Registry & context) const;
     virtual std::string serialise_results() const;
-    virtual void merge_results(const std::string & s);
+    virtual void merge_results(const std::string & serialised);
     virtual std::string get_description() const;
 };
 

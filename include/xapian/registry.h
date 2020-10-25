@@ -2,7 +2,7 @@
  * @brief Class for looking up user subclasses during unserialisation.
  */
 /* Copyright 2009 Lemur Consulting Ltd
- * Copyright 2009,2011 Olly Betts
+ * Copyright 2009,2011,2013,2014 Olly Betts
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -23,13 +23,18 @@
 #ifndef XAPIAN_INCLUDED_REGISTRY_H
 #define XAPIAN_INCLUDED_REGISTRY_H
 
-#include <xapian/base.h>
+#if !defined XAPIAN_IN_XAPIAN_H && !defined XAPIAN_LIB_BUILD
+# error Never use <xapian/registry.h> directly; include <xapian.h> instead.
+#endif
+
+#include <xapian/intrusive_ptr.h>
 #include <xapian/visibility.h>
 #include <string>
 
 namespace Xapian {
 
 // Forward declarations.
+class LatLongMetric;
 class MatchSpy;
 class PostingSource;
 class Weight;
@@ -46,7 +51,7 @@ class XAPIAN_VISIBILITY_DEFAULT Registry {
 
   private:
     /// @internal Reference counted internals.
-    Xapian::Internal::RefCntPtr<Internal> internal;
+    Xapian::Internal::intrusive_ptr<Internal> internal;
 
   public:
     /** Copy constructor.
@@ -64,6 +69,20 @@ class XAPIAN_VISIBILITY_DEFAULT Registry {
      *  @param other	The object to copy.
      */
     Registry & operator=(const Registry & other);
+
+#ifdef XAPIAN_MOVE_SEMANTICS
+    /** Move constructor.
+     *
+     * @param other	The object to move.
+     */
+    Registry(Registry && other);
+
+    /** Move assignment operator.
+     *
+     * @param other	The object to move.
+     */
+    Registry & operator=(Registry && other);
+#endif
 
     /** Default constructor.
      *
@@ -124,6 +143,19 @@ class XAPIAN_VISIBILITY_DEFAULT Registry {
      */
     const Xapian::MatchSpy *
 	    get_match_spy(const std::string & name) const;
+
+    /// Register a user-defined lat-long metric class.
+    void register_lat_long_metric(const Xapian::LatLongMetric &metric);
+
+    /** Get a lat-long metric given a name.
+     *
+     *  The returned metric is owned by the registry object.
+     *
+     *  Returns NULL if the metric could not be found.
+     */
+    const Xapian::LatLongMetric *
+	    get_lat_long_metric(const std::string & name) const;
+
 };
 
 }

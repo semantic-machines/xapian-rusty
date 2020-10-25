@@ -236,7 +236,7 @@ pub(crate) mod ffi {
 
         pub(crate) type Database;
         pub(crate) fn new_database(err: &mut i8) -> UniquePtr<Database>;
-        pub(crate) fn new_database_with_path(path: &str, db_type: i8, err: &mut i8) -> UniquePtr<Database>;
+        pub(crate) fn new_database_with_path(path: &str, err: &mut i8) -> UniquePtr<Database>;
         pub(crate) fn database_reopen(db: &mut Database, err: &mut i8);
         pub(crate) fn database_close(db: &mut Database, err: &mut i8);
         pub(crate) fn new_enquire(db: &mut Database, err: &mut i8) -> UniquePtr<Enquire>;
@@ -677,10 +677,10 @@ impl Database {
         }
     }
 
-    pub fn new_with_path(path: &str, db_type: i8) -> Result<Self, i8> {
+    pub fn new_with_path(path: &str) -> Result<Self, i8> {
         unsafe {
             let mut err = 0;
-            let obj = ffi::new_database_with_path(path, db_type, &mut err);
+            let obj = ffi::new_database_with_path(path, &mut err);
 
             if err == 0 {
                 Ok(Self {
