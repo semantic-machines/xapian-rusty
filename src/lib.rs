@@ -5,12 +5,26 @@ pub const CHERT: i8 = 2;
 pub const IN_MEMORY: i8 = 3;
 pub const UNKNOWN: i8 = 0;
 
-/** Open for read/write; create if no db exists. */
-pub const DB_CREATE_OR_OPEN: i8 = 1;
-/** Create a new database; fail if db exists. */
-pub const DB_CREATE: i8 = 2;
-/** Overwrite existing db; create if none exists. */
-pub const DB_CREATE_OR_OVERWRITE: i8 = 3;
+/** Create database if it doesn't already exist.
+ *
+ *  If no opening mode is specified, this is the default.
+ */
+pub const DB_CREATE_OR_OPEN: i8 = 0x00;
+
+/** Create database if it doesn't already exist, or overwrite if it does. */
+pub const DB_CREATE_OR_OVERWRITE: i8 = 0x01;
+
+/** Create a new database.
+ *
+ *  If the database already exists, an exception will be thrown.
+ */
+pub const DB_CREATE: i8 = 0x02;
+
+/** Open an existing database.
+ *
+ *  If the database doesn't exist, an exception will be thrown.
+ */
+pub const DB_OPEN: i8 = 0x03;
 
 /// Enum of possible query operations
 /// #[repr(i32)]
@@ -236,7 +250,7 @@ pub(crate) mod ffi {
 
         pub(crate) type Database;
         pub(crate) fn new_database(err: &mut i8) -> UniquePtr<Database>;
-        pub(crate) fn new_database_with_path(path: &str, err: &mut i8) -> UniquePtr<Database>;
+        pub(crate) fn new_database_with_path(path: &str, db_type: i8, err: &mut i8) -> UniquePtr<Database>;
         pub(crate) fn database_reopen(db: &mut Database, err: &mut i8);
         pub(crate) fn database_close(db: &mut Database, err: &mut i8);
         pub(crate) fn new_enquire(db: &mut Database, err: &mut i8) -> UniquePtr<Enquire>;
@@ -246,7 +260,7 @@ pub(crate) mod ffi {
         pub(crate) fn new_stem(lang: &str, err: &mut i8) -> UniquePtr<Stem>;
 
         pub(crate) type WritableDatabase;
-        pub(crate) fn new_writable_database_with_path(path: &str, action: i8, err: &mut i8) -> UniquePtr<WritableDatabase>;
+        pub(crate) fn new_writable_database_with_path(path: &str, action: i8, db_type: i8, err: &mut i8) -> UniquePtr<WritableDatabase>;
         pub(crate) fn commit(db: &mut WritableDatabase, err: &mut i8);
         pub(crate) fn replace_document(db: &mut WritableDatabase, unique_term: &str, doc: &mut Document, err: &mut i8) -> u32;
         pub(crate) fn delete_document(db: &mut WritableDatabase, unique_term: &str, err: &mut i8);
@@ -677,10 +691,10 @@ impl Database {
         }
     }
 
-    pub fn new_with_path(path: &str) -> Result<Self, i8> {
+    pub fn new_with_path(path: &str, db_type: i8) -> Result<Self, i8> {
         unsafe {
             let mut err = 0;
-            let obj = ffi::new_database_with_path(path, &mut err);
+            let obj = ffi::new_database_with_path(path, db_type, &mut err);
 
             if err == 0 {
                 Ok(Self {
@@ -754,10 +768,10 @@ pub struct WritableDatabase {
 
 #[allow(unused_unsafe)]
 impl WritableDatabase {
-    pub fn new(path: &str, action: i8) -> Result<Self, i8> {
+    pub fn new(path: &str, action: i8, db_type: i8) -> Result<Self, i8> {
         unsafe {
             let mut err = 0;
-            let obj = ffi::new_writable_database_with_path(path, action, &mut err);
+            let obj = ffi::new_writable_database_with_path(path, action, db_type, &mut err);
 
             if err == 0 {
                 Ok(Self {

@@ -83,12 +83,18 @@ std::unique_ptr<Database> new_database(int8_t &err)
     }
 }
 
-std::unique_ptr<Database> new_database_with_path(rust::Str path, int8_t &err)
+std::unique_ptr<Database> new_database_with_path(rust::Str path, int8_t db_type, int8_t &err)
 {
     try
     {
         err = 0;
-        return std::make_unique<Database>(std::string(path));
+
+        if (db_type == CHERT)
+            return std::make_unique<Database>(Chert::open(std::string(path)));
+        else if (db_type == IN_MEMORY)
+            return std::make_unique<Database>(InMemory::open());
+        else
+            return std::make_unique<Database>(std::string(path));
     }
     catch (Error ex)
     {
@@ -165,12 +171,20 @@ std::unique_ptr<Stem> new_stem(rust::Str lang, int8_t &err)
 }
 
 ///////////////////////////////////////////////////////////////
-std::unique_ptr<WritableDatabase> new_writable_database_with_path(rust::Str path, int8_t action, int8_t &err)
+std::unique_ptr<WritableDatabase> new_writable_database_with_path(rust::Str path, int8_t action, int8_t db_type, int8_t &err)
 {
     try
     {
         err = 0;
-        return std::make_unique<WritableDatabase>(std::string(path), action);
+
+        if (db_type == CHERT) {
+            return std::make_unique<WritableDatabase>(Chert::open(std::string(path), action));
+        }
+        else if (db_type == IN_MEMORY)
+            return std::make_unique<WritableDatabase>(InMemory::open());
+        else {
+            return std::make_unique<WritableDatabase>(std::string(path), action);
+        }
     }
     catch (Error ex)
     {
