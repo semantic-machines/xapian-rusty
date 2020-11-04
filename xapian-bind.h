@@ -24,6 +24,8 @@ std::unique_ptr<WritableDatabase> new_writable_database_with_path(rust::Str path
 void commit (WritableDatabase &db, int8_t &err);
 docid replace_document(WritableDatabase &db, rust::Str unique_term, Document &doc,  int8_t &err);
 void delete_document(WritableDatabase &db, rust::Str unique_term, int8_t &err);
+const std::string &get_db_description (WritableDatabase &db);
+int32_t get_doccount (WritableDatabase &db, int8_t &err);
 
 //
 std::unique_ptr<TermGenerator> new_termgenerator(int8_t &err);

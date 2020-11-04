@@ -1,3 +1,7 @@
+use std::error::Error as StdError;
+use std::fmt::{self, Display};
+use std::io;
+
 use cxx::UniquePtr;
 
 pub const BRASS: i8 = 1;
@@ -264,6 +268,7 @@ pub(crate) mod ffi {
         pub(crate) fn commit(db: &mut WritableDatabase, err: &mut i8);
         pub(crate) fn replace_document(db: &mut WritableDatabase, unique_term: &str, doc: &mut Document, err: &mut i8) -> u32;
         pub(crate) fn delete_document(db: &mut WritableDatabase, unique_term: &str, err: &mut i8);
+        pub(crate) fn get_doccount(db: &mut WritableDatabase, err: &mut i8) -> i32;
 
         pub(crate) type TermGenerator;
         pub(crate) fn new_termgenerator(err: &mut i8) -> UniquePtr<TermGenerator>;
@@ -326,7 +331,7 @@ pub struct MultiValueKeyMaker {
 }
 
 impl MultiValueKeyMaker {
-    pub fn new() -> Result<Self, i8> {
+    pub fn new() -> Result<Self, XError> {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
@@ -337,12 +342,12 @@ impl MultiValueKeyMaker {
                     cxxp: obj,
                 })
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn add_value(&mut self, slot: u32, asc_desc: bool) -> Result<(), i8> {
+    pub fn add_value(&mut self, slot: u32, asc_desc: bool) -> Result<(), XError> {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
@@ -351,7 +356,7 @@ impl MultiValueKeyMaker {
             if err == 0 {
                 Ok(())
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
@@ -362,13 +367,13 @@ pub struct Query {
 }
 
 impl Query {
-    pub fn new() -> Result<Self, i8> {
+    pub fn new() -> Result<Self, XError> {
         Ok(Self {
             cxxp: UniquePtr::null(),
         })
     }
 
-    pub fn new_range(op: XapianOp, slot: u32, begin: f64, end: f64) -> Result<Self, i8> {
+    pub fn new_range(op: XapianOp, slot: u32, begin: f64, end: f64) -> Result<Self, XError> {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
@@ -379,12 +384,12 @@ impl Query {
                     cxxp: obj,
                 })
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn add_right(&mut self, op: XapianOp, q: &mut Query) -> Result<Self, i8> {
+    pub fn add_right(&mut self, op: XapianOp, q: &mut Query) -> Result<Self, XError> {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
@@ -395,12 +400,12 @@ impl Query {
                     cxxp: obj,
                 })
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn new_double_with_prefix(prefix: &str, d: f64) -> Result<Self, i8> {
+    pub fn new_double_with_prefix(prefix: &str, d: f64) -> Result<Self, XError> {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
@@ -411,7 +416,7 @@ impl Query {
                     cxxp: obj,
                 })
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
@@ -459,7 +464,7 @@ pub struct QueryParser {
 
 #[allow(unused_unsafe)]
 impl QueryParser {
-    pub fn new() -> Result<Self, i8> {
+    pub fn new() -> Result<Self, XError> {
         unsafe {
             let mut err = 0;
             let obj = ffi::new_query_parser(&mut err);
@@ -469,12 +474,12 @@ impl QueryParser {
                     cxxp: obj,
                 })
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn set_max_wildcard_expansion(&mut self, limit: i32) -> Result<(), i8> {
+    pub fn set_max_wildcard_expansion(&mut self, limit: i32) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
             ffi::set_max_wildcard_expansion(&mut self.cxxp, limit, &mut err);
@@ -482,23 +487,23 @@ impl QueryParser {
             if err == 0 {
                 Ok(())
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn set_stemmer(&mut self, stem: &mut Stem) -> Result<(), i8> {
+    pub fn set_stemmer(&mut self, stem: &mut Stem) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
             ffi::set_stemmer_to_qp(&mut self.cxxp, &mut stem.cxxp, &mut err);
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
     }
 
-    pub fn set_database(&mut self, database: &mut Database) -> Result<(), i8> {
+    pub fn set_database(&mut self, database: &mut Database) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
             ffi::set_database(&mut self.cxxp, &mut database.cxxp, &mut err);
@@ -506,12 +511,12 @@ impl QueryParser {
             if err == 0 {
                 Ok(())
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn parse_query(&mut self, query: &str, flags: i16) -> Result<Query, i8> {
+    pub fn parse_query(&mut self, query: &str, flags: i16) -> Result<Query, XError> {
         unsafe {
             let mut err = 0;
             let obj = ffi::parse_query(&mut self.cxxp, query, flags, &mut err);
@@ -520,12 +525,12 @@ impl QueryParser {
                     cxxp: obj,
                 })
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn parse_query_with_prefix(&mut self, query: &str, flags: i16, prefix: &str) -> Result<Query, i8> {
+    pub fn parse_query_with_prefix(&mut self, query: &str, flags: i16, prefix: &str) -> Result<Query, XError> {
         unsafe {
             let mut err = 0;
             let obj = ffi::parse_query_with_prefix(&mut self.cxxp, query, flags, prefix, &mut err);
@@ -534,7 +539,7 @@ impl QueryParser {
                     cxxp: obj,
                 })
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
@@ -546,7 +551,7 @@ pub struct MSetIterator<'a> {
 }
 
 impl<'a> MSetIterator<'a> {
-    pub fn is_next(&mut self) -> Result<bool, i8> {
+    pub fn is_next(&mut self) -> Result<bool, XError> {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
@@ -555,12 +560,12 @@ impl<'a> MSetIterator<'a> {
             if err == 0 {
                 Ok(res)
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn next(&mut self) -> Result<(), i8> {
+    pub fn next(&mut self) -> Result<(), XError> {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
@@ -571,12 +576,12 @@ impl<'a> MSetIterator<'a> {
             if err == 0 {
                 Ok(())
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn get_document_data(&mut self) -> Result<String, i8> {
+    pub fn get_document_data(&mut self) -> Result<String, XError> {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
@@ -585,7 +590,7 @@ impl<'a> MSetIterator<'a> {
             if err == 0 {
                 Ok(ffi::get_doc_data(&mut doc).to_string())
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
@@ -603,7 +608,7 @@ impl MSet {
         })
     }
 
-    pub fn get_matches_estimated(&mut self) -> Result<i32, i8> {
+    pub fn get_matches_estimated(&mut self) -> Result<i32, XError> {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
@@ -612,7 +617,7 @@ impl MSet {
             if err == 0 {
                 Ok(res)
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
@@ -624,7 +629,7 @@ pub struct Enquire {
 }
 
 impl Enquire {
-    pub fn get_mset(&mut self, from: i32, size: i32) -> Result<MSet, i8> {
+    pub fn get_mset(&mut self, from: i32, size: i32) -> Result<MSet, XError> {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
@@ -635,12 +640,12 @@ impl Enquire {
                     cxxp: obj,
                 })
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn set_query(&mut self, query: &mut Query) -> Result<(), i8> {
+    pub fn set_query(&mut self, query: &mut Query) -> Result<(), XError> {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
@@ -649,12 +654,12 @@ impl Enquire {
             if err == 0 {
                 Ok(())
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn set_sort_by_key(&mut self, mut sorter: MultiValueKeyMaker, reverse: bool) -> Result<(), i8> {
+    pub fn set_sort_by_key(&mut self, mut sorter: MultiValueKeyMaker, reverse: bool) -> Result<(), XError> {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
@@ -664,7 +669,7 @@ impl Enquire {
             if err == 0 {
                 Ok(())
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
@@ -676,7 +681,7 @@ pub struct Database {
 
 #[allow(unused_unsafe)]
 impl Database {
-    pub fn new() -> Result<Self, i8> {
+    pub fn new() -> Result<Self, XError> {
         unsafe {
             let mut err = 0;
             let obj = ffi::new_database(&mut err);
@@ -686,12 +691,12 @@ impl Database {
                     cxxp: obj,
                 })
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn new_with_path(path: &str, db_type: i8) -> Result<Self, i8> {
+    pub fn new_with_path(path: &str, db_type: i8) -> Result<Self, XError> {
         unsafe {
             let mut err = 0;
             let obj = ffi::new_database_with_path(path, db_type, &mut err);
@@ -701,12 +706,12 @@ impl Database {
                     cxxp: obj,
                 })
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn new_enquire(&mut self) -> Result<Enquire, i8> {
+    pub fn new_enquire(&mut self) -> Result<Enquire, XError> {
         unsafe {
             let mut err = 0;
             let obj = ffi::new_enquire(&mut self.cxxp, &mut err);
@@ -717,12 +722,12 @@ impl Database {
                     sorter: None,
                 })
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn add_database(&mut self, database: &mut Database) -> Result<(), i8> {
+    pub fn add_database(&mut self, database: &mut Database) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
             ffi::add_database(&mut self.cxxp, &mut database.cxxp, &mut err);
@@ -730,12 +735,12 @@ impl Database {
             if err == 0 {
                 Ok(())
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn reopen(&mut self) -> Result<(), i8> {
+    pub fn reopen(&mut self) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
             ffi::database_reopen(&mut self.cxxp, &mut err);
@@ -743,12 +748,12 @@ impl Database {
             if err == 0 {
                 Ok(())
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn close(&mut self) -> Result<(), i8> {
+    pub fn close(&mut self) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
             ffi::database_close(&mut self.cxxp, &mut err);
@@ -756,7 +761,7 @@ impl Database {
             if err == 0 {
                 Ok(())
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
@@ -768,7 +773,7 @@ pub struct WritableDatabase {
 
 #[allow(unused_unsafe)]
 impl WritableDatabase {
-    pub fn new(path: &str, action: i8, db_type: i8) -> Result<Self, i8> {
+    pub fn new(path: &str, action: i8, db_type: i8) -> Result<Self, XError> {
         unsafe {
             let mut err = 0;
             let obj = ffi::new_writable_database_with_path(path, action, db_type, &mut err);
@@ -778,42 +783,54 @@ impl WritableDatabase {
                     cxxp: obj,
                 })
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn delete_document(&mut self, unique_term: &str) -> Result<(), i8> {
+    pub fn delete_document(&mut self, unique_term: &str) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
             ffi::delete_document(&mut self.cxxp, unique_term, &mut err);
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
     }
 
-    pub fn replace_document(&mut self, unique_term: &str, doc: &mut Document) -> Result<(), i8> {
+    pub fn replace_document(&mut self, unique_term: &str, doc: &mut Document) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
             ffi::replace_document(&mut self.cxxp, unique_term, &mut doc.cxxp, &mut err);
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
     }
 
-    pub fn commit(&mut self) -> Result<(), i8> {
+    pub fn commit(&mut self) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
             ffi::commit(&mut self.cxxp, &mut err);
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
+    }
+
+    pub fn get_doccount(&mut self) -> Result<i32, XError> {
+        unsafe {
+            let mut err = 0;
+            let res = ffi::get_doccount(&mut self.cxxp, &mut err);
+            if err < 0 {
+                return Err(XError::Xapian(err));
+            } else {
+                Ok(res)
+            }
+        }
     }
 }
 
@@ -823,7 +840,7 @@ pub struct Document {
 
 #[allow(unused_unsafe)]
 impl Document {
-    pub fn new() -> Result<Self, i8> {
+    pub fn new() -> Result<Self, XError> {
         unsafe {
             let mut err = 0;
             let obj = ffi::new_document(&mut err);
@@ -832,84 +849,84 @@ impl Document {
                     cxxp: obj,
                 })
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
 
-    pub fn add_string(&mut self, slot: u32, data: &str) -> Result<(), i8> {
+    pub fn add_string(&mut self, slot: u32, data: &str) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
 
             ffi::add_string(&mut self.cxxp, slot, data, &mut err);
 
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
     }
 
-    pub fn add_int(&mut self, slot: u32, data: i32) -> Result<(), i8> {
+    pub fn add_int(&mut self, slot: u32, data: i32) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
 
             ffi::add_int(&mut self.cxxp, slot, data, &mut err);
 
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
     }
 
-    pub fn add_long(&mut self, slot: u32, data: i64) -> Result<(), i8> {
+    pub fn add_long(&mut self, slot: u32, data: i64) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
 
             ffi::add_long(&mut self.cxxp, slot, data, &mut err);
 
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
     }
 
-    pub fn add_double(&mut self, slot: u32, data: f64) -> Result<(), i8> {
+    pub fn add_double(&mut self, slot: u32, data: f64) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
 
             ffi::add_double(&mut self.cxxp, slot, data, &mut err);
 
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
     }
 
-    pub fn set_data(&mut self, data: &str) -> Result<(), i8> {
+    pub fn set_data(&mut self, data: &str) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
 
             ffi::set_data(&mut self.cxxp, data, &mut err);
 
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
     }
 
-    pub fn add_boolean_term(&mut self, data: &str) -> Result<(), i8> {
+    pub fn add_boolean_term(&mut self, data: &str) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
 
             ffi::add_boolean_term(&mut self.cxxp, data, &mut err);
 
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
@@ -922,7 +939,7 @@ pub struct Stem {
 
 #[allow(unused_unsafe)]
 impl Stem {
-    pub fn new(lang: &str) -> Result<Self, i8> {
+    pub fn new(lang: &str) -> Result<Self, XError> {
         unsafe {
             let mut err = 0;
             let obj = ffi::new_stem(lang, &mut err);
@@ -931,7 +948,7 @@ impl Stem {
                     cxxp: obj,
                 })
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
@@ -943,7 +960,7 @@ pub struct TermGenerator {
 
 #[allow(unused_unsafe)]
 impl TermGenerator {
-    pub fn new() -> Result<Self, i8> {
+    pub fn new() -> Result<Self> {
         unsafe {
             let mut err = 0;
             let obj = ffi::new_termgenerator(&mut err);
@@ -952,7 +969,7 @@ impl TermGenerator {
                     cxxp: obj,
                 })
             } else {
-                Err(err)
+                Err(XError::Xapian(err))
             }
         }
     }
@@ -960,103 +977,103 @@ impl TermGenerator {
 
 #[allow(unused_unsafe)]
 impl TermGenerator {
-    pub fn set_stemmer(&mut self, stem: &mut Stem) -> Result<(), i8> {
+    pub fn set_stemmer(&mut self, stem: &mut Stem) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
             ffi::set_stemmer(&mut self.cxxp, &mut stem.cxxp, &mut err);
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
     }
 
-    pub fn set_document(&mut self, doc: &mut Document) -> Result<(), i8> {
+    pub fn set_document(&mut self, doc: &mut Document) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
 
             ffi::set_document(&mut self.cxxp, &mut doc.cxxp, &mut err);
 
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
     }
 
-    pub fn index_text_with_prefix(&mut self, data: &str, prefix: &str) -> Result<(), i8> {
+    pub fn index_text_with_prefix(&mut self, data: &str, prefix: &str) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
 
             ffi::index_text_with_prefix(&mut self.cxxp, data, prefix, &mut err);
 
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
     }
 
-    pub fn index_text(&mut self, data: &str) -> Result<(), i8> {
+    pub fn index_text(&mut self, data: &str) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
 
             ffi::index_text(&mut self.cxxp, data, &mut err);
 
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
     }
 
-    pub fn index_int(&mut self, data: i32, prefix: &str) -> Result<(), i8> {
+    pub fn index_int(&mut self, data: i32, prefix: &str) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
 
             ffi::index_int(&mut self.cxxp, data, prefix, &mut err);
 
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
     }
 
-    pub fn index_long(&mut self, data: i64, prefix: &str) -> Result<(), i8> {
+    pub fn index_long(&mut self, data: i64, prefix: &str) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
 
             ffi::index_long(&mut self.cxxp, data, prefix, &mut err);
 
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
     }
 
-    pub fn index_float(&mut self, data: f32, prefix: &str) -> Result<(), i8> {
+    pub fn index_float(&mut self, data: f32, prefix: &str) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
 
             ffi::index_float(&mut self.cxxp, data, prefix, &mut err);
 
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
     }
 
-    pub fn index_double(&mut self, data: f64, prefix: &str) -> Result<(), i8> {
+    pub fn index_double(&mut self, data: f64, prefix: &str) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
 
             ffi::index_double(&mut self.cxxp, data, prefix, &mut err);
 
             if err < 0 {
-                return Err(err);
+                return Err(XError::Xapian(err));
             }
         }
         Ok(())
@@ -1065,27 +1082,72 @@ impl TermGenerator {
 
 pub fn get_xapian_err_type(errcode: i8) -> &'static str {
     match errcode {
-        -1 => "DatabaseModifiedError",
-        -2 => "DatabaseLockError",
-        -3 => "LogicError",
-        -4 => "AssertionError",
-        -5 => "InvalidArgumentError",
-        -6 => "InvalidOperationError",
-        -7 => "UnimplementedError",
-        -8 => "RuntimeError",
-        -9 => "DatabaseError",
-        -10 => "DatabaseCorruptError",
-        -11 => "DatabaseCreateError",
-        -12 => "DatabaseOpeningError",
-        -13 => "DatabaseVersionError",
-        -14 => "DocNotFoundError",
-        -15 => "FeatureUnavailableError",
-        -16 => "InternalError",
-        -17 => "NetworkError",
-        -18 => "NetworkTimeoutError",
-        -19 => "QueryParserError",
-        -20 => "RangeError",
+        0 => "AssertionError",
+        -1 => "InvalidArgumentError",
+        -2 => "InvalidOperationError",
+        -3 => "UnimplementedError",
+        -4 => "DatabaseError",
+        -5 => "DatabaseCorruptError",
+        -6 => "DatabaseCreateError",
+        -7 => "DatabaseLockError",
+        -10 => "DatabaseModifiedError",
+        -11 => "DatabaseOpeningError",
+        -12 => "DatabaseVersionError",
+        -13 => "DocNotFoundError",
+        -14 => "FeatureUnavailableError",
+        -15 => "InternalError",
+        -16 => "NetworkError",
+        -17 => "NetworkTimeoutError",
+        -20 => "QueryParserError",
         -21 => "SerialisationError",
+        -22 => "RangeError",
+        -23 => "WildcardError",
+        -24 => "DatabaseNotFoundError",
+        -25 => "DatabaseClosedError",
         _ => "Unknown",
+    }
+}
+
+pub type Result<T, E = XError> = std::result::Result<T, E>;
+
+#[derive(Debug)]
+pub enum XError {
+    Xapian(i8),
+    Io(io::Error),
+}
+
+impl Display for XError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            XError::Xapian(err) => write!(f, "xapian err={}", err),
+            XError::Io(err) => err.fmt(f),
+        }
+    }
+}
+
+impl StdError for XError {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        match self {
+            XError::Io(err) => Some(err),
+            _ => None,
+        }
+    }
+}
+
+impl From<io::Error> for XError {
+    fn from(err: io::Error) -> Self {
+        XError::Io(err)
+    }
+}
+
+impl From<i8> for XError {
+    fn from(err: i8) -> Self {
+        XError::Xapian(err)
+    }
+}
+
+impl From<XError> for i8 {
+    fn from(err: XError) -> i8 {
+        err.into()
     }
 }

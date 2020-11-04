@@ -189,6 +189,9 @@ std::unique_ptr<WritableDatabase> new_writable_database_with_path(rust::Str path
     catch (Error ex)
     {
         err = get_err_code(ex.get_type());
+        if (err == 0) {
+            err = -4;
+        }
         return NULL;
     }
 }
@@ -205,6 +208,16 @@ void commit(WritableDatabase &db, int8_t &err)
     }
 }
 
+int32_t get_doccount (WritableDatabase &db, int8_t &err) {
+    try
+    {
+        return db.get_doccount();
+    }
+    catch (Error ex)
+    {
+        err = get_err_code(ex.get_type());
+    }
+}
 
 docid replace_document(WritableDatabase &db, rust::Str unique_term, Document &doc, int8_t &err)
 {
