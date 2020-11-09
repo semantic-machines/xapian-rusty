@@ -1,9 +1,9 @@
-/** @file document.h
- * @brief API for working with documents
+/** \file document.h
+ * \brief API for working with documents
  */
 /* Copyright 1999,2000,2001 BrightStation PLC
  * Copyright 2002 Ananova Ltd
- * Copyright 2002,2003,2004,2006,2007,2009,2010,2011,2012,2013,2014,2018 Olly Betts
+ * Copyright 2002,2003,2004,2006,2007,2009,2010 Olly Betts
  * Copyright 2009 Lemur Consulting Ltd
  *
  * This program is free software; you can redistribute it and/or
@@ -25,14 +25,9 @@
 #ifndef XAPIAN_INCLUDED_DOCUMENT_H
 #define XAPIAN_INCLUDED_DOCUMENT_H
 
-#if !defined XAPIAN_IN_XAPIAN_H && !defined XAPIAN_LIB_BUILD
-# error Never use <xapian/document.h> directly; include <xapian.h> instead.
-#endif
-
 #include <string>
 
-#include <xapian/attributes.h>
-#include <xapian/intrusive_ptr.h>
+#include <xapian/base.h>
 #include <xapian/types.h>
 #include <xapian/termiterator.h>
 #include <xapian/valueiterator.h>
@@ -62,7 +57,7 @@ class XAPIAN_VISIBILITY_DEFAULT Document {
     public:
 	class Internal;
 	/// @private @internal Reference counted internals.
-	Xapian::Internal::intrusive_ptr<Internal> internal;
+	Xapian::Internal::RefCntPtr<Internal> internal;
 
 	/** @private @internal Constructor is only used by internal classes.
 	 *
@@ -83,14 +78,6 @@ class XAPIAN_VISIBILITY_DEFAULT Document {
 	 *  @param other	The object to copy.
 	 */
 	void operator=(const Document &other);
-
-#ifdef XAPIAN_MOVE_SEMANTICS
-	/// Move constructor.
-	Document(Document&& o);
-
-	/// Move assignment operator.
-	Document& operator=(Document&& o);
-#endif
 
 	/// Make a new empty Document
 	Document();
@@ -213,29 +200,6 @@ class XAPIAN_VISIBILITY_DEFAULT Document {
 			    Xapian::termpos tpos,
 			    Xapian::termcount wdfdec = 1);
 
-	/** Remove a range of postings for a term.
-	 *
-	 *  Any instances of the term at positions >= @a term_pos_first and
-	 *  <= @a term_pos_last will be removed, and the wdf reduced by
-	 *  @a wdf_dec for each instance removed (the wdf will not ever go
-	 *  below zero though).
-	 *
-	 *  It's OK if the term doesn't occur in the range of positions
-	 *  specified (unlike @a remove_posting()).  And if
-	 *  term_pos_first > term_pos_last, this method does nothing.
-	 *
-	 *  @return The number of postings removed.
-	 *
-	 *  @exception Xapian::InvalidArgumentError will be thrown if the term
-	 *  is not in the document
-	 *
-	 *  @since Added in Xapian 1.4.8.
-	 */
-	Xapian::termpos remove_postings(const std::string& term,
-					Xapian::termpos term_pos_first,
-					Xapian::termpos term_pos_last,
-					Xapian::termcount wdf_dec = 1);
-
 	/** Remove a term and all postings associated with it.
 	 *
 	 *  @param tname  The name of the term.
@@ -257,7 +221,7 @@ class XAPIAN_VISIBILITY_DEFAULT Document {
 	TermIterator termlist_begin() const;
 
 	/// Equivalent end iterator for termlist_begin().
-	TermIterator XAPIAN_NOTHROW(termlist_end() const) {
+	TermIterator termlist_end() const {
 	    return TermIterator();
 	}
 
@@ -268,8 +232,8 @@ class XAPIAN_VISIBILITY_DEFAULT Document {
 	ValueIterator values_begin() const;
 
 	/// Equivalent end iterator for values_begin().
-	ValueIterator XAPIAN_NOTHROW(values_end() const) {
-	    return ValueIterator();
+	ValueIteratorEnd_ values_end() const {
+	    return ValueIteratorEnd_();
 	}
 
 	/** Get the document id which is associated with this document (if any).
@@ -296,7 +260,7 @@ class XAPIAN_VISIBILITY_DEFAULT Document {
 
 	/** Unserialise a document from a string produced by serialise().
 	 */
-	static Document unserialise(const std::string &serialised);
+	static Document unserialise(const std::string &s);
 
 	/// Return a string describing this object.
 	std::string get_description() const;

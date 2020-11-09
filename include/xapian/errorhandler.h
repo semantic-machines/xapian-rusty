@@ -1,7 +1,7 @@
-/** @file errorhandler.h
- * @brief Decide if a Xapian::Error exception should be ignored.
+/** \file errorhandler.h
+ *  \brief Decide if a Xapian::Error exception should be ignored.
  */
-/* Copyright (C) 2003,2006,2007,2012,2013,2014,2016 Olly Betts
+/* Copyright (C) 2003,2006,2007 Olly Betts
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -21,13 +21,6 @@
 #ifndef XAPIAN_INCLUDED_ERRORHANDLER_H
 #define XAPIAN_INCLUDED_ERRORHANDLER_H
 
-#if !defined XAPIAN_IN_XAPIAN_H && !defined XAPIAN_LIB_BUILD
-# error "Never use <xapian/errorhandler.h> directly; include <xapian.h> instead."
-#endif
-
-#include <xapian/attributes.h>
-#include <xapian/deprecated.h>
-#include <xapian/intrusive_ptr.h>
 #include <xapian/visibility.h>
 
 namespace Xapian {
@@ -47,8 +40,7 @@ class Error;
  *  also so that such errors can be logged and dead servers temporarily removed
  *  from use).
  */
-class XAPIAN_VISIBILITY_DEFAULT ErrorHandler
-    : public Xapian::Internal::opt_intrusive_base {
+class XAPIAN_VISIBILITY_DEFAULT ErrorHandler {
     /// Don't allow assignment.
     void operator=(const ErrorHandler &);
 
@@ -74,11 +66,11 @@ class XAPIAN_VISIBILITY_DEFAULT ErrorHandler
      *
      *  @return  true to attempt to continue; false to rethrow the error.
      */
-    XAPIAN_DEPRECATED_EX(virtual bool handle_error(Xapian::Error &error)) = 0;
+    virtual bool handle_error(Xapian::Error &error) = 0;
 
   public:
     /// Default constructor.
-    XAPIAN_NOTHROW(ErrorHandler()) {}
+    ErrorHandler() {}
 
     /// We require a virtual destructor because we have virtual methods.
     virtual ~ErrorHandler();
@@ -94,30 +86,6 @@ class XAPIAN_VISIBILITY_DEFAULT ErrorHandler
      *  @param error	The Xapian::Error object under consideration.
      */
     void operator()(Xapian::Error &error);
-
-    /** Start reference counting this object.
-     *
-     *  You can hand ownership of a dynamically allocated ErrorHandler
-     *  object to Xapian by calling release() and then passing the object to a
-     *  Xapian method.  Xapian will arrange to delete the object once it is no
-     *  longer required.
-     */
-    ErrorHandler * release() {
-	opt_intrusive_base::release();
-	return this;
-    }
-
-    /** Start reference counting this object.
-     *
-     *  You can hand ownership of a dynamically allocated ErrorHandler
-     *  object to Xapian by calling release() and then passing the object to a
-     *  Xapian method.  Xapian will arrange to delete the object once it is no
-     *  longer required.
-     */
-    const ErrorHandler * release() const {
-	opt_intrusive_base::release();
-	return this;
-    }
 };
 
 }

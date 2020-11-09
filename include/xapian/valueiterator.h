@@ -1,7 +1,7 @@
 /** @file  valueiterator.h
  *  @brief Class for iterating over document values.
  */
-/* Copyright (C) 2008,2009,2010,2011,2012,2013,2014,2015 Olly Betts
+/* Copyright (C) 2008,2009,2010,2014 Olly Betts
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,29 +22,26 @@
 #ifndef XAPIAN_INCLUDED_VALUEITERATOR_H
 #define XAPIAN_INCLUDED_VALUEITERATOR_H
 
-#if !defined XAPIAN_IN_XAPIAN_H && !defined XAPIAN_LIB_BUILD
-# error Never use <xapian/valueiterator.h> directly; include <xapian.h> instead.
-#endif
-
 #include <iterator>
 #include <string>
 
-#include <xapian/attributes.h>
+#include <xapian/base.h>
 #include <xapian/derefwrapper.h>
 #include <xapian/types.h>
 #include <xapian/visibility.h>
 
 namespace Xapian {
 
+/// @private @internal A proxy class for an end ValueIterator.
+class ValueIteratorEnd_ { };
+
 /// Class for iterating over document values.
 class XAPIAN_VISIBILITY_DEFAULT ValueIterator {
-    void decref();
-
   public:
     /// Class representing the ValueIterator internals.
     class Internal;
     /// @private @internal Reference counted internals.
-    Internal * internal;
+    Xapian::Internal::RefCntPtr<Internal> internal;
 
     /// @private @internal Construct given internals.
     explicit ValueIterator(Internal *internal_);
@@ -52,39 +49,24 @@ class XAPIAN_VISIBILITY_DEFAULT ValueIterator {
     /// Copy constructor.
     ValueIterator(const ValueIterator & o);
 
+    /// @internal Copy from an end iterator proxy.
+    ValueIterator(const ValueIteratorEnd_ &);
+
     /// Assignment.
     ValueIterator & operator=(const ValueIterator & o);
 
-#ifdef XAPIAN_MOVE_SEMANTICS
-    /// Move constructor.
-    ValueIterator(ValueIterator && o)
-	: internal(o.internal) {
-	o.internal = nullptr;
-    }
-
-    /// Move assignment operator.
-    ValueIterator & operator=(ValueIterator && o) {
-	if (this != &o) {
-	    if (internal) decref();
-	    internal = o.internal;
-	    o.internal = nullptr;
-	}
-	return *this;
-    }
-#endif
+    /// @internal Assignment of an end iterator proxy.
+    ValueIterator & operator=(const ValueIteratorEnd_ &);
 
     /** Default constructor.
      *
      *  Creates an uninitialised iterator, which can't be used before being
      *  assigned to, but is sometimes syntactically convenient.
      */
-    XAPIAN_NOTHROW(ValueIterator())
-	: internal(0) { }
+    ValueIterator();
 
     /// Destructor.
-    ~ValueIterator() {
-	if (internal) decref();
-    }
+    ~ValueIterator();
 
     /// Return the value at the current position.
     std::string operator*() const;
@@ -140,19 +122,19 @@ class XAPIAN_VISIBILITY_DEFAULT ValueIterator {
      *  @a did actually exists in the database.
      *
      *  This method acts like skip_to() if that can be done at little extra
-     *  cost, in which case it then returns true.  This is how chert and
-     *  glass databases behave because they store values in streams which allow
+     *  cost, in which case it then returns true.  This is how brass and
+     *  chert databases behave because they store values in streams which allow
      *  for an efficient implementation of skip_to().
      *
      *  Otherwise it simply checks if a particular docid is present.  If it
      *  is, it returns true.  If it isn't, it returns false, and leaves the
      *  position unspecified (and hence the result of calling methods which
-     *  depend on the current position, such as get_docid(), are also
+     *  depends on the current position, such as get_docid(), are also
      *  unspecified).  In this state, next() will advance to the first matching
      *  position after document @a did, and skip_to() will act as it would if
      *  the position was the first matching position after document @a did.
      *
-     *  Currently the inmemory and remote backends behave in the
+     *  Currently the inmemory, flint, and remote backends behave in the
      *  latter way because they don't support streamed values and so skip_to()
      *  must check each document it skips over which is significantly slower.
      *
@@ -165,7 +147,7 @@ class XAPIAN_VISIBILITY_DEFAULT ValueIterator {
     // macro.  Apple have deprecated check() in favour of __Check() and
     // plan to remove check() in a "future release", but for now prevent
     // expansion of check by adding parentheses in the method prototype:
-    // https://www.opensource.apple.com/source/CarbonHeaders/CarbonHeaders-18.1/AssertMacros.h
+    // http://www.opensource.apple.com/source/CarbonHeaders/CarbonHeaders-18.1/AssertMacros.h
     //
     // We do this conditionally, as these parentheses trip up SWIG's
     // parser:
@@ -180,7 +162,7 @@ class XAPIAN_VISIBILITY_DEFAULT ValueIterator {
      *  input_iterator.
      *
      *  The following typedefs allow std::iterator_traits<> to work so that
-     *  this iterator can be used with the STL.
+     *  this iterator can be used with with STL.
      *
      *  These are deliberately hidden from the Doxygen-generated docs, as the
      *  machinery here isn't interesting to API users.  They just need to know
@@ -200,24 +182,60 @@ class XAPIAN_VISIBILITY_DEFAULT ValueIterator {
     // @}
 };
 
-bool
-XAPIAN_NOTHROW(operator==(const ValueIterator &a, const ValueIterator &b));
-
 /// Equality test for ValueIterator objects.
 inline bool
-operator==(const ValueIterator &a, const ValueIterator &b) XAPIAN_NOEXCEPT
+operator==(const ValueIterator &a, const ValueIterator &b)
 {
     // Use a pointer comparison - this ensures both that (a == a) and correct
     // handling of end iterators (which we ensure have NULL internals).
-    return a.internal == b.internal;
+    return a.internal.get() == b.internal.get();
 }
 
-bool
-XAPIAN_NOTHROW(operator!=(const ValueIterator &a, const ValueIterator &b));
+/// @internal Equality test for ValueIterator object and end iterator.
+inline bool
+operator==(const ValueIterator &a, const ValueIteratorEnd_ &)
+{
+    return a.internal.get() == NULL;
+}
+
+/// @internal Equality test for ValueIterator object and end iterator.
+inline bool
+operator==(const ValueIteratorEnd_ &a, const ValueIterator &b)
+{
+    return b == a;
+}
+
+/// @internal Equality test for end iterators.
+inline bool
+operator==(const ValueIteratorEnd_ &, const ValueIteratorEnd_ &)
+{
+    return true;
+}
 
 /// Inequality test for ValueIterator objects.
 inline bool
-operator!=(const ValueIterator &a, const ValueIterator &b) XAPIAN_NOEXCEPT
+operator!=(const ValueIterator &a, const ValueIterator &b)
+{
+    return !(a == b);
+}
+
+/// @internal Inequality test for ValueIterator object and end iterator.
+inline bool
+operator!=(const ValueIterator &a, const ValueIteratorEnd_ &b)
+{
+    return !(a == b);
+}
+
+/// @internal Inequality test for ValueIterator object and end iterator.
+inline bool
+operator!=(const ValueIteratorEnd_ &a, const ValueIterator &b)
+{
+    return !(a == b);
+}
+
+/// @internal Inequality test for end iterators.
+inline bool
+operator!=(const ValueIteratorEnd_ &a, const ValueIteratorEnd_ &b)
 {
     return !(a == b);
 }

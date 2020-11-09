@@ -1,7 +1,7 @@
-/** @file stem.h
- * @brief stemming algorithms
+/** \file  stem.h
+ *  \brief stemming algorithms
  */
-/* Copyright (C) 2005,2007,2010,2011,2013,2014,2015,2018,2019 Olly Betts
+/* Copyright (C) 2005,2007,2010 Olly Betts
  * Copyright (C) 2010 Evgeny Sizikov
  *
  * This program is free software; you can redistribute it and/or
@@ -22,12 +22,7 @@
 #ifndef XAPIAN_INCLUDED_STEM_H
 #define XAPIAN_INCLUDED_STEM_H
 
-#if !defined XAPIAN_IN_XAPIAN_H && !defined XAPIAN_LIB_BUILD
-# error Never use <xapian/stem.h> directly; include <xapian.h> instead.
-#endif
-
-#include <xapian/constinfo.h>
-#include <xapian/intrusive_ptr.h>
+#include <xapian/base.h>
 #include <xapian/visibility.h>
 
 #include <string>
@@ -35,19 +30,9 @@
 namespace Xapian {
 
 /// Class representing a stemming algorithm implementation.
-class XAPIAN_VISIBILITY_DEFAULT StemImplementation
-    : public Xapian::Internal::intrusive_base
+struct XAPIAN_VISIBILITY_DEFAULT StemImplementation
+    : public Xapian::Internal::RefCntBase
 {
-    /// Don't allow assignment.
-    void operator=(const StemImplementation &);
-
-    /// Don't allow copying.
-    StemImplementation(const StemImplementation &);
-
-  public:
-    /// Default constructor.
-    StemImplementation() { }
-
     /// Virtual destructor.
     virtual ~StemImplementation();
 
@@ -62,21 +47,13 @@ class XAPIAN_VISIBILITY_DEFAULT StemImplementation
 class XAPIAN_VISIBILITY_DEFAULT Stem {
   public:
     /// @private @internal Reference counted internals.
-    Xapian::Internal::intrusive_ptr<StemImplementation> internal;
+    Xapian::Internal::RefCntPtr<StemImplementation> internal;
 
     /// Copy constructor.
     Stem(const Stem & o);
 
     /// Assignment.
-    Stem & operator=(const Stem & o);
-
-#ifdef XAPIAN_MOVE_SEMANTICS
-    /// Move constructor.
-    Stem(Stem && o);
-
-    /// Move assignment operator.
-    Stem & operator=(Stem && o);
-#endif
+    void operator=(const Stem & o);
 
     /** Construct a Xapian::Stem object which doesn't change terms.
      *
@@ -93,15 +70,9 @@ class XAPIAN_VISIBILITY_DEFAULT Stem {
      *  name):
      *
      *  - none - don't stem terms
-     *  - arabic (ar) - Since Xapian 1.3.5
-     *  - armenian (hy) - Since Xapian 1.3.0
-     *  - basque (eu) - Since Xapian 1.3.0
-     *  - catalan (ca) - Since Xapian 1.3.0
      *  - danish (da)
      *  - dutch (nl)
      *  - english (en) - Martin Porter's 2002 revision of his stemmer
-     *  - earlyenglish - Early English (e.g. Shakespeare, Dickens) stemmer
-     *    (since Xapian 1.3.2)
      *  - english_lovins (lovins) - Lovin's stemmer
      *  - english_porter (porter) - Porter's stemmer as described in
      *			his 1980 paper
@@ -110,34 +81,20 @@ class XAPIAN_VISIBILITY_DEFAULT Stem {
      *  - german (de)
      *  - german2 - Normalises umlauts and &szlig;
      *  - hungarian (hu)
-     *  - indonesian (id) - Since Xapian 1.4.6
-     *  - irish (ga) - Since Xapian 1.4.7
      *  - italian (it)
      *  - kraaij_pohlmann - A different Dutch stemmer
-     *  - lithuanian (lt) - Since Xapian 1.4.7
-     *  - nepali (ne) - Since Xapian 1.4.7
      *  - norwegian (nb, nn, no)
      *  - portuguese (pt)
      *  - romanian (ro)
      *  - russian (ru)
      *  - spanish (es)
      *  - swedish (sv)
-     *  - tamil (ta) - Since Xapian 1.4.7
      *  - turkish (tr)
      *
-     *  @param fallback If true then treat unknown @a language as "none",
-     *			otherwise an exception is thrown (default: false).
-     *			Parameter added in Xapian 1.4.14 - older versions
-     *			always threw an exception.
-     *
      *  @exception	Xapian::InvalidArgumentError is thrown if
-     *			@a language isn't recognised and @a fallback is false.
-     *
-     *	@{
+     *			language isn't recognised.
      */
-    explicit Stem(const std::string& language);
-    Stem(const std::string& language, bool fallback);
-    /** @} */
+    explicit Stem(const std::string &language);
 
     /** Construct a Xapian::Stem object with a user-provided stemming algorithm.
      *
@@ -162,9 +119,6 @@ class XAPIAN_VISIBILITY_DEFAULT Stem {
      */
     std::string operator()(const std::string &word) const;
 
-    /// Return true if this is a no-op stemmer.
-    bool is_none() const { return !internal.get(); }
-
     /// Return a string describing this object.
     std::string get_description() const;
 
@@ -178,11 +132,7 @@ class XAPIAN_VISIBILITY_DEFAULT Stem {
      *  spaces.  This is a static method, so a Xapian::Stem object is not
      *  required for this operation.
      */
-    static std::string get_available_languages() {
-	const struct Xapian::Internal::constinfo * info =
-	    Xapian::Internal::get_constinfo_();
-	return std::string(info->stemmer_data, info->stemmer_name_len);
-    }
+    static std::string get_available_languages();
 };
 
 }
