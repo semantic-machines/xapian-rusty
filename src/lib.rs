@@ -9,26 +9,13 @@ pub const CHERT: i8 = 2;
 pub const IN_MEMORY: i8 = 3;
 pub const UNKNOWN: i8 = 0;
 
-/** Create database if it doesn't already exist.
- *
- *  If no opening mode is specified, this is the default.
- */
-pub const DB_CREATE_OR_OPEN: i8 = 0x00;
-
-/** Create database if it doesn't already exist, or overwrite if it does. */
-pub const DB_CREATE_OR_OVERWRITE: i8 = 0x01;
-
-/** Create a new database.
- *
- *  If the database already exists, an exception will be thrown.
- */
-pub const DB_CREATE: i8 = 0x02;
-
-/** Open an existing database.
- *
- *  If the database doesn't exist, an exception will be thrown.
- */
-pub const DB_OPEN: i8 = 0x03;
+pub const DB_CREATE_OR_OPEN: i8 = 1;
+/** Create a new database; fail if db exists. */
+pub const DB_CREATE: i8 = 2;
+/** Overwrite existing db; create if none exists. */
+pub const DB_CREATE_OR_OVERWRITE: i8 = 3;
+/** Open for read/write; fail if no db exists. */
+pub const DB_OPEN: i8 = 4;
 
 /// Enum of possible query operations
 /// #[repr(i32)]

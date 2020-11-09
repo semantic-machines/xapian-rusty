@@ -68,13 +68,6 @@ char get_err_code(const char *type)
     return err;
 }
 
-/** Open for read/write; create if no db exists. */
-const int DB_CREATE_OR_OPEN = 1;
-/** Create a new database; fail if db exists. */
-const int DB_CREATE = 2;
-/** Overwrite existing db; create if none exists. */
-const int DB_CREATE_OR_OVERWRITE = 3;
-
 std::unique_ptr<Database> new_database(int8_t &err)
 {
     try
