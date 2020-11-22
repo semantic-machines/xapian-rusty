@@ -1,5 +1,5 @@
-#include "xapian-bind.h"
-#include "src/lib.rs.h"
+#include "xapian-rusty/xapian-bind.h"
+#include "xapian-rusty/src/lib.rs.h"
 #include <iostream>
 
 #include <xapian.h>
@@ -216,6 +216,7 @@ int32_t get_doccount (WritableDatabase &db, int8_t &err) {
     catch (Error ex)
     {
         err = get_err_code(ex.get_type());
+        return 0;
     }
 }
 
