@@ -4,7 +4,7 @@ version = "0.1.3"
 edition = "2018"
 description = "Rust bindings to Xapian"
 readme = "README.md"
-authors = ["Valeriy Bushenev <ValeriyBushenev@gmail.com>"]
+authors = ["Valeriy Bushenev <ValeriyBushenev@gmail.com>", "David Tolnay <dtolnay@gmail.com>"]
 license = "MIT"
 links = "xapian-rusty"
 
