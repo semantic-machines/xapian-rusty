@@ -1,17 +1,18 @@
 [package]
 name = "xapian-rusty"
-version = "0.0.37"
+version = "0.1.4"
 edition = "2018"
 description = "Rust bindings to Xapian"
 readme = "README.md"
-authors = ["Valeriy Bushenev <ValeriyBushenev@gmail.com>"]
+authors = ["Valeriy Bushenev <ValeriyBushenev@gmail.com>", "David Tolnay <dtolnay@gmail.com>"]
 license = "MIT"
+links = "xapian-rusty"
 
 [lib]
 path = "src/lib.rs"
 
 [dependencies]
-cxx = "0.3"
+cxx = "1.0.2"
 
 [build-dependencies]
-cxx-build = "0.3"
+cxx-build = "1.0.2"

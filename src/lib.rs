@@ -233,81 +233,84 @@ pub enum FeatureFlag {
 
 //use cxx::CxxString;
 
-#[cxx::bridge(namespace = org::example)]
+#[cxx::bridge]
 pub(crate) mod ffi {
-
-    extern "C" {
-        include!("xapian-bind.h");
-
+    #[namespace = "Xapian"]
+    extern "C++" {
         pub(crate) type Database;
+        pub(crate) type Stem;
+        pub(crate) type WritableDatabase;
+        pub(crate) type TermGenerator;
+        pub(crate) type Document;
+        pub(crate) type MSet;
+        pub(crate) type Enquire;
+        pub(crate) type QueryParser;
+        pub(crate) type Query;
+        pub(crate) type MultiValueKeyMaker;
+    }
+
+    unsafe extern "C++" {
+        include!("xapian-rusty/xapian-bind.h");
+
         pub(crate) fn new_database(err: &mut i8) -> UniquePtr<Database>;
         pub(crate) fn new_database_with_path(path: &str, db_type: i8, err: &mut i8) -> UniquePtr<Database>;
-        pub(crate) fn database_reopen(db: &mut Database, err: &mut i8);
-        pub(crate) fn database_close(db: &mut Database, err: &mut i8);
-        pub(crate) fn new_enquire(db: &mut Database, err: &mut i8) -> UniquePtr<Enquire>;
-        pub(crate) fn add_database(db: &mut Database, add_db: &mut Database, err: &mut i8);
+        pub(crate) fn database_reopen(db: Pin<&mut Database>, err: &mut i8);
+        pub(crate) fn database_close(db: Pin<&mut Database>, err: &mut i8);
+        pub(crate) fn new_enquire(db: Pin<&mut Database>, err: &mut i8) -> UniquePtr<Enquire>;
+        pub(crate) fn add_database(db: Pin<&mut Database>, add_db: Pin<&mut Database>, err: &mut i8);
 
-        pub(crate) type Stem;
         pub(crate) fn new_stem(lang: &str, err: &mut i8) -> UniquePtr<Stem>;
 
-        pub(crate) type WritableDatabase;
         pub(crate) fn new_writable_database_with_path(path: &str, action: i8, db_type: i8, err: &mut i8) -> UniquePtr<WritableDatabase>;
-        pub(crate) fn commit(db: &mut WritableDatabase, err: &mut i8);
-        pub(crate) fn replace_document(db: &mut WritableDatabase, unique_term: &str, doc: &mut Document, err: &mut i8) -> u32;
-        pub(crate) fn delete_document(db: &mut WritableDatabase, unique_term: &str, err: &mut i8);
-        pub(crate) fn get_doccount(db: &mut WritableDatabase, err: &mut i8) -> i32;
+        pub(crate) fn commit(db: Pin<&mut WritableDatabase>, err: &mut i8);
+        pub(crate) fn replace_document(db: Pin<&mut WritableDatabase>, unique_term: &str, doc: Pin<&mut Document>, err: &mut i8) -> u32;
+        pub(crate) fn delete_document(db: Pin<&mut WritableDatabase>, unique_term: &str, err: &mut i8);
+        pub(crate) fn get_doccount(db: Pin<&mut WritableDatabase>, err: &mut i8) -> i32;
 
-        pub(crate) type TermGenerator;
         pub(crate) fn new_termgenerator(err: &mut i8) -> UniquePtr<TermGenerator>;
-        pub(crate) fn set_stemmer(tg: &mut TermGenerator, stem: &mut Stem, err: &mut i8);
-        pub(crate) fn set_document(tg: &mut TermGenerator, doc: &mut Document, err: &mut i8);
-        pub(crate) fn index_text_with_prefix(tg: &mut TermGenerator, data: &str, prefix: &str, err: &mut i8);
-        pub(crate) fn index_text(tg: &mut TermGenerator, data: &str, err: &mut i8);
-        pub(crate) fn index_int(tg: &mut TermGenerator, data: i32, prefix: &str, err: &mut i8);
-        pub(crate) fn index_long(tg: &mut TermGenerator, data: i64, prefix: &str, err: &mut i8);
-        pub(crate) fn index_float(tg: &mut TermGenerator, data: f32, prefix: &str, err: &mut i8);
-        pub(crate) fn index_double(tg: &mut TermGenerator, data: f64, prefix: &str, err: &mut i8);
+        pub(crate) fn set_stemmer(tg: Pin<&mut TermGenerator>, stem: Pin<&mut Stem>, err: &mut i8);
+        pub(crate) fn set_document(tg: Pin<&mut TermGenerator>, doc: Pin<&mut Document>, err: &mut i8);
+        pub(crate) fn index_text_with_prefix(tg: Pin<&mut TermGenerator>, data: &str, prefix: &str, err: &mut i8);
+        pub(crate) fn index_text(tg: Pin<&mut TermGenerator>, data: &str, err: &mut i8);
+        pub(crate) fn index_int(tg: Pin<&mut TermGenerator>, data: i32, prefix: &str, err: &mut i8);
+        pub(crate) fn index_long(tg: Pin<&mut TermGenerator>, data: i64, prefix: &str, err: &mut i8);
+        pub(crate) fn index_float(tg: Pin<&mut TermGenerator>, data: f32, prefix: &str, err: &mut i8);
+        pub(crate) fn index_double(tg: Pin<&mut TermGenerator>, data: f64, prefix: &str, err: &mut i8);
 
-        pub(crate) type Document;
         pub(crate) fn new_document(err: &mut i8) -> UniquePtr<Document>;
-        pub(crate) fn add_string(doc: &mut Document, slot: u32, data: &str, err: &mut i8);
-        pub(crate) fn add_int(doc: &mut Document, slot: u32, data: i32, err: &mut i8);
-        pub(crate) fn add_long(doc: &mut Document, slot: u32, data: i64, err: &mut i8);
-        pub(crate) fn add_float(doc: &mut Document, slot: u32, data: f32, err: &mut i8);
-        pub(crate) fn add_double(doc: &mut Document, slot: u32, data: f64, err: &mut i8);
-        pub(crate) fn set_data(doc: &mut Document, data: &str, err: &mut i8);
-        pub(crate) fn get_doc_data(doc: &mut Document) -> &CxxString;
-        pub(crate) fn add_boolean_term(doc: &mut Document, data: &str, err: &mut i8);
+        pub(crate) fn add_string(doc: Pin<&mut Document>, slot: u32, data: &str, err: &mut i8);
+        pub(crate) fn add_int(doc: Pin<&mut Document>, slot: u32, data: i32, err: &mut i8);
+        pub(crate) fn add_long(doc: Pin<&mut Document>, slot: u32, data: i64, err: &mut i8);
+        pub(crate) fn add_float(doc: Pin<&mut Document>, slot: u32, data: f32, err: &mut i8);
+        pub(crate) fn add_double(doc: Pin<&mut Document>, slot: u32, data: f64, err: &mut i8);
+        pub(crate) fn set_data(doc: Pin<&mut Document>, data: &str, err: &mut i8);
+        pub(crate) fn get_doc_data(doc: Pin<&mut Document>) -> &CxxString;
+        pub(crate) fn add_boolean_term(doc: Pin<&mut Document>, data: &str, err: &mut i8);
 
-        pub(crate) type MSet;
-        pub(crate) fn get_matches_estimated(set: &mut MSet, err: &mut i8) -> i32;
-        pub(crate) fn mset_size(set: &mut MSet, err: &mut i8) -> i32;
-        pub(crate) fn get_doc_by_index(set: &mut MSet, index: i32, err: &mut i8) -> UniquePtr<Document>;
+        pub(crate) fn get_matches_estimated(set: Pin<&mut MSet>, err: &mut i8) -> i32;
+        pub(crate) fn mset_size(set: Pin<&mut MSet>, err: &mut i8) -> i32;
+        pub(crate) fn get_doc_by_index(set: Pin<&mut MSet>, index: i32, err: &mut i8) -> UniquePtr<Document>;
 
-        pub(crate) type Enquire;
-        pub(crate) fn get_mset(en: &mut Enquire, from: i32, size: i32, err: &mut i8) -> UniquePtr<MSet>;
-        pub(crate) fn set_query(en: &mut Enquire, query: &mut Query, err: &mut i8);
-        pub(crate) fn set_sort_by_key(en: &mut Enquire, sorter: &mut MultiValueKeyMaker, reverse: bool, err: &mut i8);
+        pub(crate) fn get_mset(en: Pin<&mut Enquire>, from: i32, size: i32, err: &mut i8) -> UniquePtr<MSet>;
+        pub(crate) fn set_query(en: Pin<&mut Enquire>, query: Pin<&mut Query>, err: &mut i8);
+        pub(crate) fn set_sort_by_key(en: Pin<&mut Enquire>, sorter: Pin<&mut MultiValueKeyMaker>, reverse: bool, err: &mut i8);
 
-        pub(crate) type QueryParser;
         pub(crate) fn new_query_parser(err: &mut i8) -> UniquePtr<QueryParser>;
-        pub(crate) fn set_max_wildcard_expansion(qp: &mut QueryParser, limit: i32, err: &mut i8);
-        pub(crate) fn set_stemmer_to_qp(qp: &mut QueryParser, stem: &mut Stem, err: &mut i8);
-        pub(crate) fn set_database(qp: &mut QueryParser, add_db: &mut Database, err: &mut i8);
-        pub(crate) fn parse_query(qp: &mut QueryParser, query_string: &str, flags: i16, err: &mut i8) -> UniquePtr<Query>;
-        pub(crate) fn parse_query_with_prefix(qp: &mut QueryParser, query_string: &str, flags: i16, prefix: &str, err: &mut i8) -> UniquePtr<Query>;
+        pub(crate) fn set_max_wildcard_expansion(qp: Pin<&mut QueryParser>, limit: i32, err: &mut i8);
+        pub(crate) fn set_stemmer_to_qp(qp: Pin<&mut QueryParser>, stem: Pin<&mut Stem>, err: &mut i8);
+        pub(crate) fn set_database(qp: Pin<&mut QueryParser>, add_db: Pin<&mut Database>, err: &mut i8);
+        pub(crate) fn parse_query(qp: Pin<&mut QueryParser>, query_string: &str, flags: i16, err: &mut i8) -> UniquePtr<Query>;
+        pub(crate) fn parse_query_with_prefix(qp: Pin<&mut QueryParser>, query_string: &str, flags: i16, prefix: &str, err: &mut i8) -> UniquePtr<Query>;
 
-        pub(crate) type Query;
         pub(crate) fn new_query(err: &mut i8) -> UniquePtr<Query>;
         pub(crate) fn new_query_range(op: i32, slot: u32, begin: f64, end: f64, err: &mut i8) -> UniquePtr<Query>;
-        pub(crate) fn add_right_query(this_q: &mut Query, op: i32, q: &mut Query, err: &mut i8) -> UniquePtr<Query>;
+        pub(crate) fn add_right_query(this_q: Pin<&mut Query>, op: i32, q: Pin<&mut Query>, err: &mut i8) -> UniquePtr<Query>;
         pub(crate) fn new_query_double_with_prefix(prefix: &str, d: f64, err: &mut i8) -> UniquePtr<Query>;
-        pub(crate) fn query_is_empty(this_q: &mut Query, err: &mut i8) -> bool;
-        pub(crate) fn get_description(this_q: &mut Query) -> &CxxString;
+        pub(crate) fn query_is_empty(this_q: Pin<&mut Query>, err: &mut i8) -> bool;
+        pub(crate) fn get_description(this_q: Pin<&mut Query>) -> &CxxString;
 
-        pub(crate) type MultiValueKeyMaker;
         pub(crate) fn new_multi_value_key_maker(err: &mut i8) -> UniquePtr<MultiValueKeyMaker>;
-        pub(crate) fn add_value_to_multi_value_key_maker(this_m: &mut MultiValueKeyMaker, slot: u32, asc_desc: bool, err: &mut i8);
+        pub(crate) fn add_value_to_multi_value_key_maker(this_m: Pin<&mut MultiValueKeyMaker>, slot: u32, asc_desc: bool, err: &mut i8);
     }
 }
 
@@ -338,7 +341,7 @@ impl MultiValueKeyMaker {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
-            ffi::add_value_to_multi_value_key_maker(&mut self.cxxp, slot, asc_desc, &mut err);
+            ffi::add_value_to_multi_value_key_maker(self.cxxp.pin_mut(), slot, asc_desc, &mut err);
 
             if err == 0 {
                 Ok(())
@@ -380,7 +383,7 @@ impl Query {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
-            let obj = ffi::add_right_query(&mut self.cxxp, op as i32, &mut q.cxxp, &mut err);
+            let obj = ffi::add_right_query(self.cxxp.pin_mut(), op as i32, q.cxxp.pin_mut(), &mut err);
 
             if err == 0 {
                 Ok(Self {
@@ -417,7 +420,7 @@ impl Query {
             #[allow(unused_unsafe)]
             unsafe {
                 let mut err = 0;
-                let res = ffi::query_is_empty(&mut self.cxxp, &mut err);
+                let res = ffi::query_is_empty(self.cxxp.pin_mut(), &mut err);
                 if err == 0 {
                     return res;
                 } else {
@@ -433,7 +436,7 @@ impl Query {
             #[allow(unused_unsafe)]
             unsafe {
                 //let mut err = 0;
-                let res = ffi::get_description(&mut self.cxxp);
+                let res = ffi::get_description(self.cxxp.pin_mut());
                 //if err == 0 {
                 return res.to_string();
                 //} else {
@@ -469,7 +472,7 @@ impl QueryParser {
     pub fn set_max_wildcard_expansion(&mut self, limit: i32) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
-            ffi::set_max_wildcard_expansion(&mut self.cxxp, limit, &mut err);
+            ffi::set_max_wildcard_expansion(self.cxxp.pin_mut(), limit, &mut err);
 
             if err == 0 {
                 Ok(())
@@ -482,7 +485,7 @@ impl QueryParser {
     pub fn set_stemmer(&mut self, stem: &mut Stem) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
-            ffi::set_stemmer_to_qp(&mut self.cxxp, &mut stem.cxxp, &mut err);
+            ffi::set_stemmer_to_qp(self.cxxp.pin_mut(), stem.cxxp.pin_mut(), &mut err);
             if err < 0 {
                 return Err(XError::Xapian(err));
             }
@@ -493,7 +496,7 @@ impl QueryParser {
     pub fn set_database(&mut self, database: &mut Database) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
-            ffi::set_database(&mut self.cxxp, &mut database.cxxp, &mut err);
+            ffi::set_database(self.cxxp.pin_mut(), database.cxxp.pin_mut(), &mut err);
 
             if err == 0 {
                 Ok(())
@@ -506,7 +509,7 @@ impl QueryParser {
     pub fn parse_query(&mut self, query: &str, flags: i16) -> Result<Query, XError> {
         unsafe {
             let mut err = 0;
-            let obj = ffi::parse_query(&mut self.cxxp, query, flags, &mut err);
+            let obj = ffi::parse_query(self.cxxp.pin_mut(), query, flags, &mut err);
             if err == 0 {
                 Ok(Query {
                     cxxp: obj,
@@ -520,7 +523,7 @@ impl QueryParser {
     pub fn parse_query_with_prefix(&mut self, query: &str, flags: i16, prefix: &str) -> Result<Query, XError> {
         unsafe {
             let mut err = 0;
-            let obj = ffi::parse_query_with_prefix(&mut self.cxxp, query, flags, prefix, &mut err);
+            let obj = ffi::parse_query_with_prefix(self.cxxp.pin_mut(), query, flags, prefix, &mut err);
             if err == 0 {
                 Ok(Query {
                     cxxp: obj,
@@ -542,7 +545,7 @@ impl<'a> MSetIterator<'a> {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
-            let res = ffi::mset_size(&mut self.mset.cxxp, &mut err) > self.index;
+            let res = ffi::mset_size(self.mset.cxxp.pin_mut(), &mut err) > self.index;
 
             if err == 0 {
                 Ok(res)
@@ -556,7 +559,7 @@ impl<'a> MSetIterator<'a> {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
-            if ffi::mset_size(&mut self.mset.cxxp, &mut err) > self.index {
+            if ffi::mset_size(self.mset.cxxp.pin_mut(), &mut err) > self.index {
                 self.index += 1;
             }
 
@@ -572,10 +575,10 @@ impl<'a> MSetIterator<'a> {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
-            let mut doc = ffi::get_doc_by_index(&mut self.mset.cxxp, self.index, &mut err);
+            let mut doc = ffi::get_doc_by_index(self.mset.cxxp.pin_mut(), self.index, &mut err);
 
             if err == 0 {
-                Ok(ffi::get_doc_data(&mut doc).to_string())
+                Ok(ffi::get_doc_data(doc.pin_mut()).to_string())
             } else {
                 Err(XError::Xapian(err))
             }
@@ -599,7 +602,7 @@ impl MSet {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
-            let res = ffi::get_matches_estimated(&mut self.cxxp, &mut err);
+            let res = ffi::get_matches_estimated(self.cxxp.pin_mut(), &mut err);
 
             if err == 0 {
                 Ok(res)
@@ -620,7 +623,7 @@ impl Enquire {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
-            let obj = ffi::get_mset(&mut self.cxxp, from, size, &mut err);
+            let obj = ffi::get_mset(self.cxxp.pin_mut(), from, size, &mut err);
 
             if err == 0 {
                 Ok(MSet {
@@ -636,7 +639,7 @@ impl Enquire {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
-            ffi::set_query(&mut self.cxxp, &mut query.cxxp, &mut err);
+            ffi::set_query(self.cxxp.pin_mut(), query.cxxp.pin_mut(), &mut err);
 
             if err == 0 {
                 Ok(())
@@ -650,7 +653,7 @@ impl Enquire {
         #[allow(unused_unsafe)]
         unsafe {
             let mut err = 0;
-            ffi::set_sort_by_key(&mut self.cxxp, &mut sorter.cxxp, reverse, &mut err);
+            ffi::set_sort_by_key(self.cxxp.pin_mut(), sorter.cxxp.pin_mut(), reverse, &mut err);
             self.sorter = Some(sorter);
 
             if err == 0 {
@@ -701,7 +704,7 @@ impl Database {
     pub fn new_enquire(&mut self) -> Result<Enquire, XError> {
         unsafe {
             let mut err = 0;
-            let obj = ffi::new_enquire(&mut self.cxxp, &mut err);
+            let obj = ffi::new_enquire(self.cxxp.pin_mut(), &mut err);
 
             if err == 0 {
                 Ok(Enquire {
@@ -717,7 +720,7 @@ impl Database {
     pub fn add_database(&mut self, database: &mut Database) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
-            ffi::add_database(&mut self.cxxp, &mut database.cxxp, &mut err);
+            ffi::add_database(self.cxxp.pin_mut(), database.cxxp.pin_mut(), &mut err);
 
             if err == 0 {
                 Ok(())
@@ -730,7 +733,7 @@ impl Database {
     pub fn reopen(&mut self) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
-            ffi::database_reopen(&mut self.cxxp, &mut err);
+            ffi::database_reopen(self.cxxp.pin_mut(), &mut err);
 
             if err == 0 {
                 Ok(())
@@ -743,7 +746,7 @@ impl Database {
     pub fn close(&mut self) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
-            ffi::database_close(&mut self.cxxp, &mut err);
+            ffi::database_close(self.cxxp.pin_mut(), &mut err);
 
             if err == 0 {
                 Ok(())
@@ -778,7 +781,7 @@ impl WritableDatabase {
     pub fn delete_document(&mut self, unique_term: &str) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
-            ffi::delete_document(&mut self.cxxp, unique_term, &mut err);
+            ffi::delete_document(self.cxxp.pin_mut(), unique_term, &mut err);
             if err < 0 {
                 return Err(XError::Xapian(err));
             }
@@ -789,7 +792,7 @@ impl WritableDatabase {
     pub fn replace_document(&mut self, unique_term: &str, doc: &mut Document) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
-            ffi::replace_document(&mut self.cxxp, unique_term, &mut doc.cxxp, &mut err);
+            ffi::replace_document(self.cxxp.pin_mut(), unique_term, doc.cxxp.pin_mut(), &mut err);
             if err < 0 {
                 return Err(XError::Xapian(err));
             }
@@ -800,7 +803,7 @@ impl WritableDatabase {
     pub fn commit(&mut self) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
-            ffi::commit(&mut self.cxxp, &mut err);
+            ffi::commit(self.cxxp.pin_mut(), &mut err);
             if err < 0 {
                 return Err(XError::Xapian(err));
             }
@@ -811,7 +814,7 @@ impl WritableDatabase {
     pub fn get_doccount(&mut self) -> Result<i32, XError> {
         unsafe {
             let mut err = 0;
-            let res = ffi::get_doccount(&mut self.cxxp, &mut err);
+            let res = ffi::get_doccount(self.cxxp.pin_mut(), &mut err);
             if err < 0 {
                 return Err(XError::Xapian(err));
             } else {
@@ -845,7 +848,7 @@ impl Document {
         unsafe {
             let mut err = 0;
 
-            ffi::add_string(&mut self.cxxp, slot, data, &mut err);
+            ffi::add_string(self.cxxp.pin_mut(), slot, data, &mut err);
 
             if err < 0 {
                 return Err(XError::Xapian(err));
@@ -858,7 +861,7 @@ impl Document {
         unsafe {
             let mut err = 0;
 
-            ffi::add_int(&mut self.cxxp, slot, data, &mut err);
+            ffi::add_int(self.cxxp.pin_mut(), slot, data, &mut err);
 
             if err < 0 {
                 return Err(XError::Xapian(err));
@@ -871,7 +874,7 @@ impl Document {
         unsafe {
             let mut err = 0;
 
-            ffi::add_long(&mut self.cxxp, slot, data, &mut err);
+            ffi::add_long(self.cxxp.pin_mut(), slot, data, &mut err);
 
             if err < 0 {
                 return Err(XError::Xapian(err));
@@ -884,7 +887,7 @@ impl Document {
         unsafe {
             let mut err = 0;
 
-            ffi::add_double(&mut self.cxxp, slot, data, &mut err);
+            ffi::add_double(self.cxxp.pin_mut(), slot, data, &mut err);
 
             if err < 0 {
                 return Err(XError::Xapian(err));
@@ -897,7 +900,7 @@ impl Document {
         unsafe {
             let mut err = 0;
 
-            ffi::set_data(&mut self.cxxp, data, &mut err);
+            ffi::set_data(self.cxxp.pin_mut(), data, &mut err);
 
             if err < 0 {
                 return Err(XError::Xapian(err));
@@ -910,7 +913,7 @@ impl Document {
         unsafe {
             let mut err = 0;
 
-            ffi::add_boolean_term(&mut self.cxxp, data, &mut err);
+            ffi::add_boolean_term(self.cxxp.pin_mut(), data, &mut err);
 
             if err < 0 {
                 return Err(XError::Xapian(err));
@@ -967,7 +970,7 @@ impl TermGenerator {
     pub fn set_stemmer(&mut self, stem: &mut Stem) -> Result<(), XError> {
         unsafe {
             let mut err = 0;
-            ffi::set_stemmer(&mut self.cxxp, &mut stem.cxxp, &mut err);
+            ffi::set_stemmer(self.cxxp.pin_mut(), stem.cxxp.pin_mut(), &mut err);
             if err < 0 {
                 return Err(XError::Xapian(err));
             }
@@ -979,7 +982,7 @@ impl TermGenerator {
         unsafe {
             let mut err = 0;
 
-            ffi::set_document(&mut self.cxxp, &mut doc.cxxp, &mut err);
+            ffi::set_document(self.cxxp.pin_mut(), doc.cxxp.pin_mut(), &mut err);
 
             if err < 0 {
                 return Err(XError::Xapian(err));
@@ -992,7 +995,7 @@ impl TermGenerator {
         unsafe {
             let mut err = 0;
 
-            ffi::index_text_with_prefix(&mut self.cxxp, data, prefix, &mut err);
+            ffi::index_text_with_prefix(self.cxxp.pin_mut(), data, prefix, &mut err);
 
             if err < 0 {
                 return Err(XError::Xapian(err));
@@ -1005,7 +1008,7 @@ impl TermGenerator {
         unsafe {
             let mut err = 0;
 
-            ffi::index_text(&mut self.cxxp, data, &mut err);
+            ffi::index_text(self.cxxp.pin_mut(), data, &mut err);
 
             if err < 0 {
                 return Err(XError::Xapian(err));
@@ -1018,7 +1021,7 @@ impl TermGenerator {
         unsafe {
             let mut err = 0;
 
-            ffi::index_int(&mut self.cxxp, data, prefix, &mut err);
+            ffi::index_int(self.cxxp.pin_mut(), data, prefix, &mut err);
 
             if err < 0 {
                 return Err(XError::Xapian(err));
@@ -1031,7 +1034,7 @@ impl TermGenerator {
         unsafe {
             let mut err = 0;
 
-            ffi::index_long(&mut self.cxxp, data, prefix, &mut err);
+            ffi::index_long(self.cxxp.pin_mut(), data, prefix, &mut err);
 
             if err < 0 {
                 return Err(XError::Xapian(err));
@@ -1044,7 +1047,7 @@ impl TermGenerator {
         unsafe {
             let mut err = 0;
 
-            ffi::index_float(&mut self.cxxp, data, prefix, &mut err);
+            ffi::index_float(self.cxxp.pin_mut(), data, prefix, &mut err);
 
             if err < 0 {
                 return Err(XError::Xapian(err));
@@ -1057,7 +1060,7 @@ impl TermGenerator {
         unsafe {
             let mut err = 0;
 
-            ffi::index_double(&mut self.cxxp, data, prefix, &mut err);
+            ffi::index_double(self.cxxp.pin_mut(), data, prefix, &mut err);
 
             if err < 0 {
                 return Err(XError::Xapian(err));
