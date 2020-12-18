@@ -1138,6 +1138,9 @@ impl From<i8> for XError {
 
 impl From<XError> for i8 {
     fn from(err: XError) -> i8 {
-        err.into()
+        match err {
+            XError::Xapian(e) => e,
+            XError::Io(_) => -99,
+        }
     }
 }
