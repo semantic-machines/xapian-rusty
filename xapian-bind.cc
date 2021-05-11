@@ -674,9 +674,16 @@ std::unique_ptr<MSet> get_mset(Enquire &en, int32_t from, int32_t size, int8_t &
         err = 0;
         return std::make_unique<Xapian::MSet>(en.get_mset(from, size));
     }
-    catch (Error ex)
-    {
+    catch (Xapian::DatabaseModifiedError &e) {
+        err = -10;
+        return NULL;
+    }
+    catch (Error ex){
         err = get_err_code(ex.get_type());
+        return NULL;
+    }
+    catch (...) {
+        err = -15;
         return NULL;
     }
 }
