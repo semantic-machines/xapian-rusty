@@ -12,7 +12,7 @@ links = "xapian-rusty"
 path = "src/lib.rs"
 
 [dependencies]
-cxx = "=1.0.57"
+cxx = "=1.0.88"
 
 [build-dependencies]
-cxx-build = "=1.0.57"
+cxx-build = "=1.0.88"
