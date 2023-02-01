@@ -284,7 +284,7 @@ pub(crate) mod ffi {
         pub(crate) fn add_float(doc: Pin<&mut Document>, slot: u32, data: f32, err: &mut i8);
         pub(crate) fn add_double(doc: Pin<&mut Document>, slot: u32, data: f64, err: &mut i8);
         pub(crate) fn set_data(doc: Pin<&mut Document>, data: &str, err: &mut i8);
-        pub(crate) fn get_doc_data(doc: Pin<&mut Document>) -> &CxxString;
+        pub(crate) fn get_doc_data(doc: Pin<&mut Document>) -> String;
         pub(crate) fn add_boolean_term(doc: Pin<&mut Document>, data: &str, err: &mut i8);
 
         pub(crate) fn get_matches_estimated(set: Pin<&mut MSet>, err: &mut i8) -> i32;
@@ -578,7 +578,7 @@ impl<'a> MSetIterator<'a> {
             let mut doc = ffi::get_doc_by_index(self.mset.cxxp.pin_mut(), self.index, &mut err);
 
             if err == 0 {
-                Ok(ffi::get_doc_data(doc.pin_mut()).to_string())
+                Ok(String::from(ffi::get_doc_data(doc.pin_mut()).to_string()))
             } else {
                 Err(XError::Xapian(err))
             }
