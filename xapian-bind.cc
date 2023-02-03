@@ -483,7 +483,7 @@ rust::String get_doc_data (Document &doc) {
     try
     {
         //err = 0;
-        return rust::String (doc.get_data());
+        return rust::String::lossy (doc.get_data());
     }
     catch (Error ex)
     {
