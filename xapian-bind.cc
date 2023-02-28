@@ -482,12 +482,10 @@ void add_boolean_term(Document &doc, rust::Str data, int8_t &err)
 rust::String get_doc_data (Document &doc) {
     try
     {
-        //err = 0;
-        return rust::String::lossy (doc.get_data());
+        return doc.get_data();
     }
     catch (Error ex)
     {
-        //err = get_err_code(ex.get_type());
         return rust::String("");
     }
 
