@@ -484,7 +484,7 @@ rust::String get_doc_data (Document &doc) {
     {
         return doc.get_data();
     }
-    catch (Error ex)
+    catch (...)
     {
         return rust::String("");
     }
