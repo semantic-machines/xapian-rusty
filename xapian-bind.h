@@ -47,7 +47,7 @@ void add_float(Document &doc, valueno slot, float in_data, int8_t &err);
 void add_double(Document &doc, valueno slot, double in_data, int8_t &err);
 void set_data (Document &doc, rust::Str data, int8_t &err);
 void add_boolean_term(Document &doc, rust::Str data, int8_t &err);
-rust::String get_doc_data (Document &doc);
+rust::String get_doc_data (Document &doc, int8_t &err);
 
 //
 std::unique_ptr<QueryParser> new_query_parser(int8_t &err);

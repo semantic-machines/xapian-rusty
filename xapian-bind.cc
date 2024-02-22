@@ -479,13 +479,14 @@ void add_boolean_term(Document &doc, rust::Str data, int8_t &err)
     }
 }
 
-rust::String get_doc_data (Document &doc) {
+rust::String get_doc_data (Document &doc, int8_t &err) {
     try
     {
         return doc.get_data();
     }
     catch (...)
     {
+        err = -21;
         return rust::String("");
     }
 
