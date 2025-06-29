@@ -281,6 +281,7 @@ pub(crate) mod ffi {
         pub(crate) fn add_string(doc: Pin<&mut Document>, slot: u32, data: &str, err: &mut i8);
         pub(crate) fn add_int(doc: Pin<&mut Document>, slot: u32, data: i32, err: &mut i8);
         pub(crate) fn add_long(doc: Pin<&mut Document>, slot: u32, data: i64, err: &mut i8);
+        #[allow(dead_code)]
         pub(crate) fn add_float(doc: Pin<&mut Document>, slot: u32, data: f32, err: &mut i8);
         pub(crate) fn add_double(doc: Pin<&mut Document>, slot: u32, data: f64, err: &mut i8);
         pub(crate) fn set_data(doc: Pin<&mut Document>, data: &str, err: &mut i8);
@@ -302,6 +303,7 @@ pub(crate) mod ffi {
         pub(crate) fn parse_query(qp: Pin<&mut QueryParser>, query_string: &str, flags: i16, err: &mut i8) -> UniquePtr<Query>;
         pub(crate) fn parse_query_with_prefix(qp: Pin<&mut QueryParser>, query_string: &str, flags: i16, prefix: &str, err: &mut i8) -> UniquePtr<Query>;
 
+        #[allow(dead_code)]
         pub(crate) fn new_query(err: &mut i8) -> UniquePtr<Query>;
         pub(crate) fn new_query_range(op: i32, slot: u32, begin: f64, end: f64, err: &mut i8) -> UniquePtr<Query>;
         pub(crate) fn add_right_query(this_q: Pin<&mut Query>, op: i32, q: Pin<&mut Query>, err: &mut i8) -> UniquePtr<Query>;
@@ -314,7 +316,7 @@ pub(crate) mod ffi {
     }
 }
 
-#[warn(unused_unsafe)]
+#[allow(unused_unsafe)]
 
 pub struct MultiValueKeyMaker {
     pub cxxp: UniquePtr<ffi::MultiValueKeyMaker>,
